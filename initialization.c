@@ -1,0 +1,65 @@
+#include "header.h"
+
+// defines some header functions used in main.c
+
+// initlize the onboard portF LED
+// initialize the two onboard switches
+void PortF_LED_Init() {
+  CONTROL_REGISTER = 0x20; //power on port F
+  F_LOCK = 0x4C4F434B; //unlock value defined on datasheet
+  F_CR = 0xFF;  //enables us to write to PUR
+  F_DATA_DIRECTION = 0x0E; //0b0110 switches in, LED out
+  F_PUR = 0x11; //0b100
+  F_D_A = 0x1F; //0b11111 set all the ports to digital
+}
+
+// initialize the offboard switches in PA5 and PA6
+void Switch_Init(void) {
+  volatile unsigned long delay;
+
+  CONTROL_REGISTER |= 0x0000001;          // activate the clock for port a
+  delay = CONTROL_REGISTER;               // allow time for the clock to start
+                                        // no need to unlock GPIO PORTA
+  PORTA_ANALOG &= ~0x60;          // disable analog on PA5 and PA6
+  PORTA_CONTROL &= 0x00F00000;      // PCTL GPIO on PA5 and PA6
+  PORTA_DIRECTION &= ~0x60;            // set PA5, PA6 Direction to input
+  PORTA_FUNCTION &= ~0x60;          // PA5 PA6 regular port function
+  PORTA_DIGITAL |= 0x60;             // PA5 PA6 port set to digital
+}
+
+// initialize the offboard LED in PA2, PA3, PA4
+void LED_Init(void) {
+  volatile unsigned long delay;
+
+  CONTROL_REGISTER |= 0x01;          // activate clock for Port A
+  delay = CONTROL_REGISTER;           // allows time for clock to start
+                                   // no need to unlock PA2
+  PORTA_CONTROL &= 0x00000F00; // regular GPIO
+  PORTA_ANALOG &= ~0x1C;     // disable analog function for PA2
+  PORTA_DIRECTION |= 0x1C;        // PA2 set direction to output
+  PORTA_FUNCTION &= ~0x1C;     // PA2 regular port funcion
+  PORTA_DIGITAL |= 0x1C;        // PA2 enable digital port
+}
+
+// initialize timer0
+void Timer_Init(void) {
+  RCGCTIMER |= 0x01; // enable the timer
+  Timer0_CTL &= ~0x00000001; // lock the timer
+  Timer0_CFG = 0x00000000; // set the 32 bit configuration
+  Timer0_TnMR = 0x00000002; // configure TnMR field to A
+  Timer0_TnILR = 0x00F42400; // start interval 16,000000
+  Timer0_INTERRUPT |= 0x11;  // turn on the interrupt
+  Timer0_FLAG |= 0x00000001;  // clear timeout flag
+  Timer0_CTL |= 0x00000001;  // unlock the timer timer
+}
+
+void Interrupt_Init(void) {
+  INTERRUPT_ENABLE |= (1<<19);  // enable timer interrupt
+  PORTF_EDGE_SENSITIVE &= ~0x11;  // makes bit 0 and 4 edge sensitive
+  PORTF_TRIGGER_CONTROL &= ~0x11;  // trigger is controlled by iev
+  PORTF_TRIGGER_SIDE = ~0x11;  // falling trigger level
+  INTERRUPT_ENABLE |= (1<<30);  // enable switch interrupt
+  INTERRUPT_PRIORITY = (3<<28);  // set switch interrupt priority 3
+  PORTF_FLAG |= 0x11;  // clear any prior interrupts
+  PORTF_MASK |= 0x11;  // unmask interrupts
+}
