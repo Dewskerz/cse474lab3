@@ -1,19 +1,20 @@
 /**
-  Copyright 2018 Andrew Cunningham
-  1610973
-  andyham@uw.edu
-  CSE 474
+  Copyright 2018 
+  Andrew Cunningham,  andyham@uw.edu, 1610973
+  Abhyudaya Gupta
 
-  Lab 2
+  CSE 474 SU 2018
+  Lab 3
 
-  Defines many constants needed for initialization and declares many function
-  headers
+  Defines many constants needed for initialization and declares many functions
 */
-
-#include <stdint.h>
 //#include <tm4c123gh6pm.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "intrinsics.h"
+
+/// **************************************************************************
+/// ************* Macro Definitions
 
 #define RCC2TEST (*((volatile uint32_t *)0x400FE070))
 
@@ -56,6 +57,7 @@
 
 // ***************************
 // Definitions for Port F LED
+// and onboard switches
 #define F_DATA_DIRECTION  (*((volatile uint32_t *)0x40025400))  //port F data direction
 #define F_D_A             (*((volatile uint32_t *)0x4002551C))  //port F analog or digital
 #define F_PUR             (*((volatile uint32_t *)0x40025510))  //port F pull up resistors
@@ -65,9 +67,6 @@
 
 #define PA5 (*((volatile unsigned long *)0x40004080))
 #define PA6 (*((volatile unsigned long *)0x40004100))
-
-// ******************************
-// Definitions for offboard switches through PA5 and PA6
 
 
 // ******************************************
@@ -99,56 +98,12 @@
 #define YELLOW 0x0A  //0b01010
 #define WHITE 0x1E  //0b11110
 
-/*******************************/
-// test functions
-/** Blinking
-  uses TimerCheck()
-  blinks Port F LED on/off evert second
-  cycles through Red, Blue, and Green
-*/
-void Blinking(void);         // Lab 2 part a. 1
-void BlinkingPartB(void);   // Lab 2 parb.4
-
-/** FSMRunPartA
-  uses TimerCheck();
-  all buttons have a 2 second response time
-  PA5 starts oscillation between RED and GREEN every 5 seconds
-  PA6 interrupts moves to YELLOW for 5 seconds before red for 5
-*/
-void FSMRunPartA(void);      // Lab 2 part a. 2
-void FSMRunPartB(void);      // Lab 2 part b. 4
-                              // a copy of part A, but tweeked to use the 
-                             // timer interrupt
-/********************************/
-
+/// **************************************************************************
+/// ************* Function Declarations
 void ADCThermometer(void);
 
-/*************/
-//powers on and off external LED in PA2, used in figure 7
-void LED_On(void);
-void LED_Off(void);
-/***************/
-// powers on and off various external LED
-// PA2: GREEN, PA3: YELLOW, PA4: RED
-void RED_ON(void);
-void YELLOW_ON(void);
-void GREEN_ON(void);
-void RED_OFF(void);
-void YELLOW_OFF(void);
-void GREEN_OFF(void);
-void FSM_LED_Off(void);
-/*********************************/
-// used to check input off offboard switches for FSM
-// FSM_On: PA5, FSM_Pass: PA6
-unsigned long FSMOn(void);
-unsigned long FSMPass(void);
-/*******************************/
-
-
-
-
-/***********************/
-//Initialization
+/******************/
+//Initializations
 void PortF_LED_Init();     // initialize onboard port F LEDs
                            // initialize onboard buttons
                            // does not use tm4c123gh6pm.h
@@ -160,12 +115,13 @@ void Timer_Init(void);      // sets up the timer to count down from 16,000000
 void Interrupt_Init(void);  // sets up functionality for
                             // the two onboard buttons to act as interrupts
                             // and the timer interrupt
-void ADC_Andrew_Init(void);
+void ADC_Andrew_Init(void); // funky name because there's an ADC_Init somewhere else
 void PLL_Init(void);
-void Temp_Read_Start(void);
 /************************/
 
 void welcomeFlash(); // cycles through PortF colors
+
+void TempReadStart(void);
 
 // timer functions
 // returns 1 if timer has counted down to 0, 0 otherwise

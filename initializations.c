@@ -1,3 +1,14 @@
+/**
+  Copyright 2018 
+  Andrew Cunningham,  andyham@uw.edu, 1610973
+  Abhyudaya Gupta
+
+  CSE 474 SU 2018
+  Lab 3
+
+  Defines many constants needed for initialization and declares many functions
+*/
+
 #include "header.h"
 
 // defines some header functions used in main.c
@@ -116,22 +127,6 @@ void ADC_Andrew_Init(void) {
   ADC_IM |= 0x8;
   ADC_IM &= ~0x7;
   
-  Temp_Read_Start();
+  TempReadStart();
 }
 
-void Temp_Read_Start() {
-  // start of things to do every time
-  // ADCISC to 0b100
-  ADC_ISC |= (1<<3);
-  // ADC_ISC &= ~0x7;
-  // ADCDCISC to 0b100
-  ADC_D_ISC |= (1<<3);
-  // ADC_D_ISC &= ~0x7;
-  // step 8: turn on sequencer
-  ADC_SSCTL3 &= ~(0x2);
-  // ADC_SAMPL_SEQ &= ~0x7;
-  ADCACTSS_SS3 |= (1<<3);
-  // step 9:  turn on sequencer ADCPSSI
-  ADC_SEQ_INIT |= 0x8; // want 0b100
-  ADC_SEQ_INIT &= ~0x7;
-}
