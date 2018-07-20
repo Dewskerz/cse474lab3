@@ -63,3 +63,75 @@ void Interrupt_Init(void) {
   PORTF_FLAG |= 0x11;  // clear any prior interrupts
   PORTF_MASK |= 0x11;  // unmask interrupts
 }
+
+void PLL_Init(void) {
+  //RCC2TEST = 0xDEADBEEF;
+  
+  // totally cheated for 80MHz
+  //RCC = 0x024E3540;
+  //RCC2 = 0xC2404000; // 80MHZ
+  // RCC2 = 0xC4C04000; // 4 MHZ
+  // RCC2 = 0xC0404000; // 400 MHZ
+  // RCC2 = 0xCC404000;  // 16 MHZ
+  //return;
+  
+  //i think this is alllllllll wrong
+  
+  // step 1, enable the 31 bit
+  RCC2 |= (0x80000000);
+  // step 2, bypass PLL, bit 11 = 0
+  RCC |= (1<<11);
+  RCC2 |= (1<<11);
+  // step 3, select crystal, bits 10-6 10101
+  RCC |= (0x15<<6);
+  RCC &= ~(0xA<<6);
+  // step 4, select oscillator source, bits 6-4 000
+  RCC &= ~(3<<4);
+  RCC2 &= ~(0x7<<4);
+  // step 5, activate PLL by bit 13 to 0
+  RCC2 &= ~(1<13);
+  // step 6, set system divider, bit 30 to 1
+  RCC2 |= (1<<30);
+  // step 7, set sys divider 28-22 to 0x4
+  RCC2 &= ~(0x7C<<22);
+  RCC2 |= (0xC<<22);
+  // step 8, wait for PLL to lock
+  do {} while ((RCC & 0x20));
+  // step 8, disable bypass
+  RCC &= ~(1<<11);
+  RCC2 &= ~(1<<11);
+}
+
+void ADC_Andrew_Init(void) {
+  // step 1 enable clock to ADC & GPIO module
+  ADC_CONTROL |= 0x01;  // want 0x01
+  // step 2 choose and disable sample sequence ADCACTSS
+  ADCACTSS_SS3 = 0x0;  // want 0b100
+  // step 3 choose software trigger ADCEMUX
+  ADC_MUX |= 0x1;
+  // step 4 skip
+  // step 5 set ACD control to 0b1100
+  ADC_SSCTL3 = 0xD;
+  // set ADCIM to 0b100
+  ADC_IM |= 0x8;
+  ADC_IM &= ~0x7;
+  
+  Temp_Read_Start();
+}
+
+void Temp_Read_Start() {
+  // start of things to do every time
+  // ADCISC to 0b100
+  ADC_ISC |= (1<<3);
+  // ADC_ISC &= ~0x7;
+  // ADCDCISC to 0b100
+  ADC_D_ISC |= (1<<3);
+  // ADC_D_ISC &= ~0x7;
+  // step 8: turn on sequencer
+  ADC_SSCTL3 &= ~(0x2);
+  // ADC_SAMPL_SEQ &= ~0x7;
+  ADCACTSS_SS3 |= (1<<3);
+  // step 9:  turn on sequencer ADCPSSI
+  ADC_SEQ_INIT |= 0x8; // want 0b100
+  ADC_SEQ_INIT &= ~0x7;
+}

@@ -11,22 +11,37 @@
 */
 
 #include <stdint.h>
-#include <tm4c123gh6pm.h>
+//#include <tm4c123gh6pm.h>
 #include <stdbool.h>
 #include "intrinsics.h"
 
+#define RCC2TEST (*((volatile uint32_t *)0x400FE070))
 
+#define RCC_BASE            0x400FE000   
 #define CONTROL_REGISTER  (*((volatile uint32_t *)0x400FE108))  //system control registers
 #define ptr(x) (*((volatile uint32_t *)x))
 
 // ******************************
 // definitions used for PLL
-
+// we just use RCC2
+#define RCC2    ptr(0x400FE070)
+#define RCC     ptr(0x400FE060)
 
 // ******************************
 // definitions used for ADC
+#define SYSCTL_RCGCADC_R        (*((volatile uint32_t *)0x400FE638))
+#define ADC_OUTPUT              (*((volatile uint32_t *)0x400380A8))
+
 #define ADC_BASE       0x400FE000
-#define ADC_CONTROL    ptr(ADC_BASE + 0x636) // step 1 
+#define ADC0_MAP       0x40038000
+#define ADC_CONTROL    ptr(0x400FE638)
+#define ADCACTSS_SS3  ptr(0x40038000)
+#define ADC_MUX        ptr(0x40038014)
+#define ADC_SSCTL3        ptr(0x400380A4)
+#define ADC_IM         ptr(0x40038008)
+#define ADC_ISC        ptr(0x4003800C)
+#define ADC_D_ISC      ptr(0x40038034)
+#define ADC_SEQ_INIT   ptr(0x40038028)
 
 
 
@@ -145,6 +160,9 @@ void Timer_Init(void);      // sets up the timer to count down from 16,000000
 void Interrupt_Init(void);  // sets up functionality for
                             // the two onboard buttons to act as interrupts
                             // and the timer interrupt
+void ADC_Andrew_Init(void);
+void PLL_Init(void);
+void Temp_Read_Start(void);
 /************************/
 
 void welcomeFlash(); // cycles through PortF colors

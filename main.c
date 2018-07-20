@@ -42,6 +42,8 @@ void main(void) {
   LED_Init();           // initializes PA2, PA3, PA4 to interface with
                         // offboard LED
   Timer_Init();         // enables functionality for 
+  PLL_Init();
+  ADC_Andrew_Init();
   welcomeFlash();       // display a friendly start-up flash
   
   switch (TEST_CODE) {
@@ -55,7 +57,9 @@ void main(void) {
 
 void ADCThermometer(void) {
   while(1) {
-    F_DATA = (timerledonoffswitch ? BLUE : 0);
+    //F_DATA = (timerledonoffswitch ? BLUE : 0);
+    // read the temperature
+    
   }
 }
 
@@ -66,6 +70,16 @@ void Timer0_Handler(void) {
   timerledonoffswitch = !timerledonoffswitch;
   UpdatePart2TimerSwitch(timerledonoffswitch);
   Timer0_FLAG |= 0x00000001;  // clear timeout flag
+  
+  // take temperature
+  int temp = (147.5 - (247.5 * ADC_OUTPUT) / 4096.0);
+  // convert the temperature
+  if (temp > 0 && temp < 26) F_DATA = BLUE;
+  else if (temp > 26 && temp < 60) F_DATA = GREEN;
+  else F_DATA = RED;
+  // display the appropriate LED
+  // resets
+  Temp_Read_Start();
 }
 
 void GPIOPortF_Handler(void) {
