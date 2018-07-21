@@ -75,7 +75,7 @@ void Interrupt_Init(void) {
   PORTF_MASK |= 0x11;  // unmask interrupts
 }
 
-void PLL_Init(void) {
+void PLL_Init(int speed) {
   //RCC2TEST = 0xDEADBEEF;
   
   // totally cheated for 80MHz
@@ -94,23 +94,32 @@ void PLL_Init(void) {
   RCC |= (1<<11);
   RCC2 |= (1<<11);
   // step 3, select crystal, bits 10-6 10101
-  RCC |= (0x15<<6);
-  RCC &= ~(0xA<<6);
-  // step 4, select oscillator source, bits 6-4 000
-  RCC &= ~(3<<4);
-  RCC2 &= ~(0x7<<4);
+  RCC |= 0x540;  // 0b10101000000
+  RCC &= 0x57F;  // 0b10101111111
+  // step 4, select oscillator source
+  RCC &= ~(3<<4);  //  0b001111
+  RCC2 &= ~(7<<4); // 0b0001111
   // step 5, activate PLL by bit 13 to 0
   RCC2 &= ~(1<13);
   // step 6, set system divider, bit 30 to 1
   RCC2 |= (1<<30);
   // step 7, set sys divider 28-22 to 0x4
-  RCC2 &= ~(0x7C<<22);
-  RCC2 |= (0xC<<22);
+  int rccmask =  ~(0x7C00000);
+  int rcc2mask = ~(0x1FC00000);
+  // rccmask = rccmask | (4<<22);
+  // rcc2mask = rcc2mask | (24<<22);
+  RCC &= rccmask;
+  RCC2 &= rcc2mask;
+  int n = (400 / speed) - 1;
+  RCC |= (n<<22);
+  RCC2 |= (n<<22);
   // step 8, wait for PLL to lock
-  do {} while ((RCC & 0x20));
+  do {} while ((SYSCTL_RIS & 0x20));
   // step 8, disable bypass
   RCC &= ~(1<<11);
   RCC2 &= ~(1<<11);
+  //Timer0_TnILR = 0x4C4B400; // start interval 80,000,000
+  Timer0_TnILR = (speed * 1000000);
 }
 
 void ADC_Andrew_Init(void) {
@@ -127,6 +136,6 @@ void ADC_Andrew_Init(void) {
   ADC_IM |= 0x8;
   ADC_IM &= ~0x7;
   
-  TempReadStart();
+  TakeTemperature();
 }
 

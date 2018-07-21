@@ -11,6 +11,7 @@
 */
 
 #include "header.h"
+#include <stdio.h>
 
 
 /*****   Test Code Guide ***********************************************
@@ -19,7 +20,7 @@
 */
 #define TEST_CODE 1
 
-bool timerledonoffswitch = false;
+bool timerbool = false;
 
 void main(void) {
   PortF_LED_Init();     // initialize onboard port F LEDs
@@ -32,7 +33,7 @@ void main(void) {
                         // offboard LED
   */
   Timer_Init();         // enables timer 0 
-  PLL_Init();           // sets cpu clock to 80MHz
+  PLL_Init(16);           // sets cpu clock to 80MHz
   ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
   welcomeFlash();       // display a friendly start-up flash
   Interrupt_Init();
@@ -47,7 +48,7 @@ void main(void) {
 void ADCThermometer(void) {
   __enable_interrupt();
   while(1) {
-    //F_DATA = (timerledonoffswitch ? BLUE : 0);
+    //F_DATA = (timerbool ? BLUE : 0);
     // Sit here and do nothing
     // while the handlers do all the work
     
@@ -58,30 +59,38 @@ void ADCThermometer(void) {
 
 
 void Timer0_Handler(void) {
-  timerledonoffswitch = !timerledonoffswitch;
+  timerbool = !timerbool;
   
-  // take temperature
-  int temp = (int) (147.5 - (247.5 * ADC_OUTPUT) / 4096.0);
-  // convert the temperature
-  if (temp > 0 && temp < 26) F_DATA = BLUE;
-  else if (temp > 26 && temp < 60) F_DATA = GREEN;
-  else F_DATA = RED;
-  // display the appropriate LED
+  int temp = TakeTemperature();
+  if (temp != 0) {
+    SetLED_Temp(temp);
+  } else { 
+    F_DATA = 0x0;
+  }
   // resets
-  TempReadStart();
   Timer0_FLAG |= 0x00000001;  // clear timeout flag
 }
 
 
 // hander for the onboard switches
 void GPIOPortF_Handler(void) {
-  // TODO: configure to change the clock speed
-  // PF0 - SW2 - 4MHz
-  // PF4 - SW1 - 80MHz
+  switch(F_DATA & 0x11) {
+        case 0x10: //switch 1 is pressed
+          // PF4 - SW1 - 80MHz
+          PLL_Init(80);
+          break;
+        case 0x01: //switch 2 is pressed
+          // PF0 - SW2 - 4MHz
+          PLL_Init(4);
+          break;
+  }
+  
+  
   PORTF_FLAG |= 0x11;
 }
 
-void TempReadStart() {
+int TakeTemperature(void) {
+  int temp =  (int) (147.5 - (247.5 * ADC_OUTPUT) / 4096.0);
   // start of things to do every time
   // ADCISC to 0b100
   ADC_ISC |= (1<<3);
@@ -96,6 +105,30 @@ void TempReadStart() {
   // step 9:  turn on sequencer ADCPSSI
   ADC_SEQ_INIT |= 0x8; // want 0b100
   ADC_SEQ_INIT &= ~0x7;
+  
+  return temp;
+}
+
+void SetLED_Temp(int temp) {
+  printf("Temp: %d\n", temp);
+  if (temp >= 0 && temp < 17) {
+    F_DATA = RED;
+  } else if (temp >= 17 && temp < 19) {
+    F_DATA = BLUE;
+  } else if (temp >= 19 && temp < 21) {
+    F_DATA = VIOLET;
+  } else if (temp >= 21 && temp < 23) {
+    F_DATA = GREEN;
+  } else if (temp >= 23 && temp < 25) {
+    F_DATA = YELLOW;
+  } else if (temp >= 25 && temp < 27) {
+    F_DATA = LIGHTBLUE;
+  } else if (temp >= 27 && temp < 40) {
+    F_DATA = WHITE;
+  } else {
+    // debugger
+    //while(1) {};
+  }
 }
 
 // a small welcome flash, to acknowledge start of the program

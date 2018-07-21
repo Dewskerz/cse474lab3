@@ -25,8 +25,9 @@
 // ******************************
 // definitions used for PLL
 // we just use RCC2
-#define RCC2    ptr(0x400FE070)
-#define RCC     ptr(0x400FE060)
+#define RCC2        ptr(0x400FE070)
+#define RCC         ptr(0x400FE060)
+#define SYSCTL_RIS  ptr(0x400FE050)
 
 // ******************************
 // definitions used for ADC
@@ -92,11 +93,13 @@
 #define INTERRUPT_PRIORITY       (*((volatile uint32_t *)0xE000E41C))
 
 //for port F onboard LED
-#define RED 0x02  //0b00010
-#define BLUE 0x04  //0b00100
-#define GREEN 0x08  //0b01000
-#define YELLOW 0x0A  //0b01010
-#define WHITE 0x1E  //0b11110
+#define RED       0x02  // 0b00010
+#define BLUE      0x04  // 0b00100
+#define VIOLET    0x06  // 0b00110
+#define GREEN     0x08  // 0b01000
+#define YELLOW    0x0A  // 0b01010
+#define LIGHTBLUE 0x0D  // 0b01100
+#define WHITE     0x1E  //0b11110
 
 /// **************************************************************************
 /// ************* Function Declarations
@@ -116,12 +119,13 @@ void Interrupt_Init(void);  // sets up functionality for
                             // the two onboard buttons to act as interrupts
                             // and the timer interrupt
 void ADC_Andrew_Init(void); // funky name because there's an ADC_Init somewhere else
-void PLL_Init(void);
+void PLL_Init(int speed);
 /************************/
 
 void welcomeFlash(); // cycles through PortF colors
 
-void TempReadStart(void);
+int TakeTemperature(void);
+void SetLED_Temp(int temp);
 
 // timer functions
 // returns 1 if timer has counted down to 0, 0 otherwise
