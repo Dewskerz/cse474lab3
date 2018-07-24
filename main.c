@@ -83,6 +83,7 @@ void GPIOPortF_Handler(void) {
           // PF0 - SW2 - 4MHz
           PLL_Init(4);
           break;
+          // This is abhyudaya doing craxy stuff
   }
   
   
