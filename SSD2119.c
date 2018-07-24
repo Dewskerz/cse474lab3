@@ -71,10 +71,7 @@ typedef struct {
     short y;
 } coord;
 
-/* *************************************************************
-TODO: Please fill the information based on the datasheet
-******************************************************************/
-// TODO: dimensions of the LCD in pixels
+// dimensions of the LCD in pixels
 #define LCD_HEIGHT      320
 #define LCD_WIDTH       240
 
@@ -175,35 +172,39 @@ unsigned long ADC_Read(void);
 // *********************************************************
 void ADC_SetChannel(unsigned char channelNum);
 
-/* *************************************************************
-TODO: Please fill the information based on the pseudocode
-******************************************************************/
 
 // ************** TODO: LCD_GPIOInit ****************************
 // - Initializes Port B to be used as the data bus and
 //   Port A 4-7 as controller signals
 // ********************************************************
 void LCD_GPIOInit(void){
-    unsigned long wait = 0;
+  unsigned long wait = 0;
     
-                                            // activate parallel data pins
-                                            // activate port B
-    wait++;                                // wait for port activation
-    wait++;                                // wait for port activation
-                                           // make PB0-7 outputs
-                                           // disable alternate functions 
-                                           // enable digital I/O on PB0-7
-    
-    // activate control pins
-                                          // activate port A
-    wait++;                               // wait for port activation
-    wait++;                               // wait for port activation
-                                          // make PA4-7 outputs
-                                          // disable alternate functions 
-                                          // enable digital I/O on PA4-7
-    
-
-    for (wait = 0; wait < 500; wait++) {}
+  // activate parallel data pins
+  // activate port B on RCGCGPIO
+  SYSCTL_RCGCGPIO_R |= 0x2;
+  wait++;                                // wait for port activation
+  wait++;                                // wait for port activation
+  // make PB0-7 outputs
+  GPIO_PORTB_DIR_R &= ~(0xFF);
+  // disable alternate functions
+  GPIO_PORTB_AFSEL_R &= ~(0xFF);
+  // enable digital I/O on PB0-7
+  GPIO_PORTB_DEN_R |= 0xFF;
+  //GPIO_PORTB_DR8R_R |= 0xFF;
+  // activate control pins
+  // activate port A
+  SYSCTL_RCGCGPIO_R |= 0x1;
+  wait++;                               // wait for port activation
+  wait++;                               // wait for port activation
+  GPIO_PORTA_DIR_R |= 0xF0; // make PA4-7 outputs
+  GPIO_PORTA_AFSEL_R &= ~(0xF0); // disable alternate functions
+  GPIO_PORTA_DEN_R |= 0xF0; // enable digital I/O on PA4-7
+  //GPIO_PORTA_DR8R_R
+  //GPIO_PORTA_PCTL_R
+  
+  
+   for (wait = 0; wait < 500; wait++) {}
 }
 
 // ************** TODO: LCD_WriteCommand ************************
@@ -215,17 +216,17 @@ void LCD_GPIOInit(void){
 //  PA6     RS  Register/Data select signal     | CS  | RS  | WR  | RD  |
 //  PA7     CS  Chip select signal              -------------------------
 void LCD_WriteCommand(unsigned char data){volatile unsigned long delay;
-                      // Set CS=0, RS=0, WR=1, RD=1 for LCD_CTRL
-                     // Write 0 as MSB of command data for LCD_DATA
+    LCD_CTRL = (3<<4);   // Set CS=0, RS=0, WR=1, RD=1 for LCD_CTRL
+    LCD_DATA = 0x00;      // Write 0 as MSB of command data for LCD_DATA
     delay++;
-                    // Set WR low for LCD_CTRL
+    LCD_CTRL &= (1<<5);  // Set WR low for LCD_CTRL
     delay++;
-                    // Set WR high for LCD_CTRL  
-                    // Write data as LSB of command data for LCD_DATA
+    LCD_CTRL |= (1<<5);  // Set WR high for LCD_CTRL  
+    LCD_DATA = data;     // Write data as LSB of command data for LCD_DATA
     delay++;
-                    // Set WR low for LCD_CTRL
+    LCD_CTRL &= (1<<5);  // Set WR low for LCD_CTRL
     delay++;
-                    // Set all high for LCD_CTRL
+    LCD_CTRL = 0xF0;     // Set all high for LCD_CTRL
 }
 
 // ************** LCD_WriteData ***************************
@@ -471,9 +472,9 @@ void LCD_SetTextColor(unsigned char r, unsigned char g, unsigned char b){
     textColor = convertColor(r, g, b);
 }
 
-// ************** printf **********************************
-// - Basic printf() implementation
-// - Adapted from Craig Chase, EE312 printf() case study
+// ************** LCD_Printf **********************************
+// - Basic LCD_Printf() implementation
+// - Adapted from Craig Chase, EE312 LCD_Printf() case study
 // - Supports:
 //   - %d   Signed decimal integer
 //   - %c   Character
@@ -483,7 +484,7 @@ void LCD_SetTextColor(unsigned char r, unsigned char g, unsigned char b){
 //   - %b   Binary integer
 //   - %%   A single % output
 // ********************************************************
-void printf(char fmt[], ...) {
+void LCD_Printf(char fmt[], ...) {
 	unsigned char k = 0;
 	void* next_arg = &fmt + 1;
 	while (fmt[k] != 0) {
@@ -653,16 +654,16 @@ void LCD_PrintFloat(float num){
     long temp;
     
     // Decode exponent
-    printf ("binary = %b\n", num);
-    printf ("hex    = %x\n", num);
+    LCD_Printf ("binary = %b\n", num);
+    LCD_Printf ("hex    = %x\n", num);
     
     temp = ((long)num);
-    printf ("exponent = %d\n", temp);
+    LCD_Printf ("exponent = %d\n", temp);
     
     
     LCD_PrintChar('\n');
    // temp = (long)(num*(1<<12));
-   // printf("%d.%d", temp>>12,  (temp&0xFFF)*1000/(1<<12));
+   // LCD_Printf("%d.%d", temp>>12,  (temp&0xFFF)*1000/(1<<12));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -906,7 +907,7 @@ void LCD_DrawBMP(const unsigned char* imgPtr, unsigned short x, unsigned short y
 
     
     // debug info
-//    printf("height: %d, width: %d, bpp %d", height, width, bpp);
+//    LCD_Printf("height: %d, width: %d, bpp %d", height, width, bpp);
     
     // setup pixel pointer
     pixelOffset = imgPtr + dataOffset;
@@ -1025,19 +1026,20 @@ void Touch_Init(void){
     // Initialize ADC for use with touchscreen
     ADC_Init();    
 
-    // Activate PORTA GPIO clock
+    SYSCTL_RCGC2_R |= 0x1; // Activate PORTA GPIO clock
+    
     wait++;
     wait++;
 
     // Configure PA2/PA3 for GPIO digital output
-
+    GPIO_PORTA_DIR_R |= (3<<2);
     
-    // Activate PORTE GPIO clock
+    SYSCTL_RCGC2_R |= (1<<4); // Activate PORTE GPIO clock
     wait++;
     wait++;
     
     // Configure PE4/PE5 for GPIO digital output
-
+    GPIO_PORTE_DIR_R |= (3<<4);
 }
 
 // ************** ADC_Init *********************************
@@ -1048,40 +1050,40 @@ void Touch_Init(void){
 // Input: channel number
 // Output: none
 // *********************************************************
-void ADC_Init(void){
-    long wait = 0;
-    
-    // Set bit 0 in SYSCTL_RCGCADC_R to enable ADC0
-    SYSCTL_RCGCADC_R    |=  0x01;
-    for (wait = 0; wait < 50; wait++){}
-        
-    SYSCTL_RCGCGPIO_R |= 0x10;
-    
-    // Set ADC sample to 125KS/s
-    ADC0_PC_R = 0x01;
-  
-    // Disable all sequencers for configuration
-    ADC0_ACTSS_R &= ~0x000F;
-
-    // Set ADC0 SS3 to highest priority
-    ADC0_SSPRI_R = 0x0123;    
-    
-    // Set bits 12-15 to 0x00 to enable software trigger on SS3
-    ADC0_EMUX_R &= ~0xF000;
-
-    // Set sample channel for sequencer 3
-    ADC0_SSMUX3_R &= 0xFFF0;    
-    ADC0_SSMUX3_R += 9;
-
-    // TS0 = 0, IE0 = 1, END0 = 1, D0 = 0
-    ADC0_SSCTL3_R = 0x006;
-    
-    // Disable ADC interrupts on SS3 by clearing bit 3
-    ADC0_IM_R &= ~0x0008;
-    
-    // Re-enable sample sequencer 3
-    ADC0_ACTSS_R |= 0x0008;
-}
+//void ADC_Init(void){
+//    long wait = 0;
+//    
+//    // Set bit 0 in SYSCTL_RCGCADC_R to enable ADC0
+//    SYSCTL_RCGCADC_R    |=  0x01;
+//    for (wait = 0; wait < 50; wait++){}
+//        
+//    SYSCTL_RCGCGPIO_R |= 0x10;
+//    
+//    // Set ADC sample to 125KS/s
+//    ADC0_PC_R = 0x01;
+//  
+//    // Disable all sequencers for configuration
+//    ADC0_ACTSS_R &= ~0x000F;
+//
+//    // Set ADC0 SS3 to highest priority
+//    ADC0_SSPRI_R = 0x0123;    
+//    
+//    // Set bits 12-15 to 0x00 to enable software trigger on SS3
+//    ADC0_EMUX_R &= ~0xF000;
+//
+//    // Set sample channel for sequencer 3
+//    ADC0_SSMUX3_R &= 0xFFF0;    
+//    ADC0_SSMUX3_R += 9;
+//
+//    // TS0 = 0, IE0 = 1, END0 = 1, D0 = 0
+//    ADC0_SSCTL3_R = 0x006;
+//    
+//    // Disable ADC interrupts on SS3 by clearing bit 3
+//    ADC0_IM_R &= ~0x0008;
+//    
+//    // Re-enable sample sequencer 3
+//    ADC0_ACTSS_R |= 0x0008;
+//}
 
 // ************** ADC_Read *********************************
 // - Takes a sample from the ADC
