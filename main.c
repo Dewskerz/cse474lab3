@@ -69,6 +69,7 @@ void Timer0_Handler(void) {
   }
   // resets
   Timer0_FLAG |= 0x00000001;  // clear timeout flag
+  // Andrew's comment
 }
 
 
