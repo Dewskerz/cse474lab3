@@ -33,9 +33,9 @@ void main(void) {
   //LED_Init();           // initializes PA2, PA3, PA4 to interface with
                         // offboard LED
   Timer_Init();         // enables timer 0 
-  //PLL_Init(16);           // sets cpu clock to 80MHz
-  //ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
-  //welcomeFlash();       // display a friendly start-up flash
+  PLL_Init(16);           // sets cpu clock to 80MHz
+  ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
+  welcomeFlash();       // display a friendly start-up flash
   Interrupt_Init();
   
   switch (TEST_CODE) {
