@@ -1,8 +1,7 @@
-
 /*
   Copyright 2018 
   Andrew Cunningham,  andyham@uw.edu, 1610973
-  Abhyudaya Gupta
+  Abhyudaya Gupta,    ag98@uw.edu,    1664461
 
   CSE 474 SU 2018
   Lab 3
