@@ -8,6 +8,9 @@
 
   Defines many constants needed for initialization and declares many functions
 */
+
+#ifndef _373_HEADER_H_
+#define _373_HEADER_H_
 //#include <tm4c123gh6pm.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -34,7 +37,7 @@
 #define SYSCTL_RCGCADC_R        (*((volatile uint32_t *)0x400FE638))
 #define ADC_OUTPUT              (*((volatile uint32_t *)0x400380A8))
 
-#define ADC_BASE       0x400FE000
+// #define ADC_BASE       ptr(0x400FE000)
 #define ADC0_MAP       0x40038000
 #define ADC_CONTROL    ptr(0x400FE638)
 #define ADCACTSS_SS3  ptr(0x40038000)
@@ -136,3 +139,5 @@ void UpdatePortFAndTimerPartB(void);
 
 // wait functions
 void waitn(int); // waits for n loops
+
+#endif

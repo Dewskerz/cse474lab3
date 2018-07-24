@@ -74,8 +74,8 @@ void LCD_Goto(unsigned char x, unsigned char y);
 // ********************************************************
 void LCD_SetTextColor(unsigned char r, unsigned char g, unsigned char b);
 
-// ************** printf **********************************
-// - Basic printf() implementation
+// ************** LCD_Printf **********************************
+// - Basic LCD_Printf() implementation
 // - Supports:
 //   - %d   Signed decimal integer
 //   - %c   Character
@@ -85,7 +85,7 @@ void LCD_SetTextColor(unsigned char r, unsigned char g, unsigned char b);
 //   - %b   Binary integer
 //   - %%   A single % output
 // ********************************************************
-void printf(char fmt[], ...);
+void LCD_Printf(char fmt[], ...);
 
 // ************** LCD_PrintInteger ************************
 // - Prints a signed integer to the screen
@@ -321,5 +321,67 @@ unsigned long Touch_ReadZ2(void);
 long Touch_GetCoords(void);
 
 void Touch_BeginWaitForTouch(void);
+
+// ********* Defines for Inits  **********************
+#define SYSCTL_RCGCGPIO_R       (*((volatile uint32_t *)0x400FE608))
+#define GPIO_PORTB_DR8R_R       (*((volatile uint32_t *)0x40005508))
+#define GPIO_PORTB_DIR_R        (*((volatile uint32_t *)0x40005400))
+#define GPIO_PORTB_DEN_R        (*((volatile uint32_t *)0x4000551C))
+
+#define SYSCTL_RCGC2_R          (*((volatile uint32_t *)0x400FE108))
+
+#define GPIO_PORTE_DIR_R        (*((volatile uint32_t *)0x40024400))
+
+//#define GPIO_PORTB_DATA_BITS_R  ((volatile uint32_t *)0x40005000)
+//#define GPIO_PORTB_DATA_R       (*((volatile uint32_t *)0x400053FC))
+//#define GPIO_PORTB_DIR_R        (*((volatile uint32_t *)0x40005400))
+//#define GPIO_PORTB_IS_R         (*((volatile uint32_t *)0x40005404))
+//#define GPIO_PORTB_IBE_R        (*((volatile uint32_t *)0x40005408))
+//#define GPIO_PORTB_IEV_R        (*((volatile uint32_t *)0x4000540C))
+//#define GPIO_PORTB_IM_R         (*((volatile uint32_t *)0x40005410))
+//#define GPIO_PORTB_RIS_R        (*((volatile uint32_t *)0x40005414))
+//#define GPIO_PORTB_MIS_R        (*((volatile uint32_t *)0x40005418))
+//#define GPIO_PORTB_ICR_R        (*((volatile uint32_t *)0x4000541C))
+//#define GPIO_PORTB_AFSEL_R      (*((volatile uint32_t *)0x40005420))
+//#define GPIO_PORTB_DR2R_R       (*((volatile uint32_t *)0x40005500))
+//#define GPIO_PORTB_DR4R_R       (*((volatile uint32_t *)0x40005504))
+//#define GPIO_PORTB_DR8R_R       (*((volatile uint32_t *)0x40005508))
+//#define GPIO_PORTB_ODR_R        (*((volatile uint32_t *)0x4000550C))
+//#define GPIO_PORTB_PUR_R        (*((volatile uint32_t *)0x40005510))
+//#define GPIO_PORTB_PDR_R        (*((volatile uint32_t *)0x40005514))
+//#define GPIO_PORTB_SLR_R        (*((volatile uint32_t *)0x40005518))
+//#define GPIO_PORTB_LOCK_R       (*((volatile uint32_t *)0x40005520))
+//#define GPIO_PORTB_CR_R         (*((volatile uint32_t *)0x40005524))
+//#define GPIO_PORTB_AMSEL_R      (*((volatile uint32_t *)0x40005528))
+//#define GPIO_PORTB_PCTL_R       (*((volatile uint32_t *)0x4000552C))
+//#define GPIO_PORTB_ADCCTL_R     (*((volatile uint32_t *)0x40005530))
+//#define GPIO_PORTB_DMACTL_R     (*((volatile uint32_t *)0x40005534))
+
+
+#define GPIO_PORTA_DATA_BITS_R  ((volatile uint32_t *)0x40004000)
+#define GPIO_PORTA_DATA_R       (*((volatile uint32_t *)0x400043FC))
+#define GPIO_PORTA_DIR_R        (*((volatile uint32_t *)0x40004400))
+#define GPIO_PORTA_IS_R         (*((volatile uint32_t *)0x40004404))
+#define GPIO_PORTA_IBE_R        (*((volatile uint32_t *)0x40004408))
+#define GPIO_PORTA_IEV_R        (*((volatile uint32_t *)0x4000440C))
+#define GPIO_PORTA_IM_R         (*((volatile uint32_t *)0x40004410))
+#define GPIO_PORTA_RIS_R        (*((volatile uint32_t *)0x40004414))
+#define GPIO_PORTA_MIS_R        (*((volatile uint32_t *)0x40004418))
+#define GPIO_PORTA_ICR_R        (*((volatile uint32_t *)0x4000441C))
+#define GPIO_PORTA_AFSEL_R      (*((volatile uint32_t *)0x40004420))
+#define GPIO_PORTA_DR2R_R       (*((volatile uint32_t *)0x40004500))
+#define GPIO_PORTA_DR4R_R       (*((volatile uint32_t *)0x40004504))
+#define GPIO_PORTA_DR8R_R       (*((volatile uint32_t *)0x40004508))
+#define GPIO_PORTA_ODR_R        (*((volatile uint32_t *)0x4000450C))
+#define GPIO_PORTA_PUR_R        (*((volatile uint32_t *)0x40004510))
+#define GPIO_PORTA_PDR_R        (*((volatile uint32_t *)0x40004514))
+#define GPIO_PORTA_SLR_R        (*((volatile uint32_t *)0x40004518))
+#define GPIO_PORTA_DEN_R        (*((volatile uint32_t *)0x4000451C))
+#define GPIO_PORTA_LOCK_R       (*((volatile uint32_t *)0x40004520))
+#define GPIO_PORTA_CR_R         (*((volatile uint32_t *)0x40004524))
+#define GPIO_PORTA_AMSEL_R      (*((volatile uint32_t *)0x40004528))
+#define GPIO_PORTA_PCTL_R       (*((volatile uint32_t *)0x4000452C))
+#define GPIO_PORTA_ADCCTL_R     (*((volatile uint32_t *)0x40004530))
+#define GPIO_PORTA_DMACTL_R     (*((volatile uint32_t *)0x40004534))
 
 #endif

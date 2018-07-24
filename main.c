@@ -21,21 +21,21 @@
 #define TEST_CODE 1
 
 bool timerbool = false;
+int counter = 0;
 
 void main(void) {
   PortF_LED_Init();     // initialize onboard port F LEDs
                         // initialize onboard buttons
-  /* 
-  not needed for lab3 part a
+  
+  //not needed for lab3 part a
   Switch_Init();        // initializes PA5 and PA6 to interface with
                         // offboard buttoms
-  LED_Init();           // initializes PA2, PA3, PA4 to interface with
+  //LED_Init();           // initializes PA2, PA3, PA4 to interface with
                         // offboard LED
-  */
   Timer_Init();         // enables timer 0 
-  PLL_Init(16);           // sets cpu clock to 80MHz
-  ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
-  welcomeFlash();       // display a friendly start-up flash
+  //PLL_Init(16);           // sets cpu clock to 80MHz
+  //ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
+  //welcomeFlash();       // display a friendly start-up flash
   Interrupt_Init();
   
   switch (TEST_CODE) {
@@ -91,6 +91,7 @@ void GPIOPortF_Handler(void) {
 
 int TakeTemperature(void) {
   int temp =  (int) (147.5 - (247.5 * ADC_OUTPUT) / 4096.0);
+  printf("Time %d TempRAW: %f TempConverted: %d\n", ++counter, (float) ADC_OUTPUT, temp);
   // start of things to do every time
   // ADCISC to 0b100
   ADC_ISC |= (1<<3);
@@ -99,18 +100,18 @@ int TakeTemperature(void) {
   ADC_D_ISC |= (1<<3);
   // ADC_D_ISC &= ~0x7;
   // step 8: turn on sequencer
-  ADC_SSCTL3 &= ~(0x2);
+  ADC_SSCTL3 &= ~(1<<1);
   // ADC_SAMPL_SEQ &= ~0x7;
   ADCACTSS_SS3 |= (1<<3);
   // step 9:  turn on sequencer ADCPSSI
-  ADC_SEQ_INIT |= 0x8; // want 0b100
-  ADC_SEQ_INIT &= ~0x7;
+  ADC_SEQ_INIT |= 0x4; // want 0b100
+  ADC_SEQ_INIT &= ~0x3;
   
   return temp;
 }
 
 void SetLED_Temp(int temp) {
-  printf("Temp: %d\n", temp);
+  //printf("Time %d Temp: %d\n", ++counter, temp);
   if (temp >= 0 && temp < 17) {
     F_DATA = RED;
   } else if (temp >= 17 && temp < 19) {
