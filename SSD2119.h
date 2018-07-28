@@ -3,6 +3,15 @@
 #ifndef SSD2119_H
 #define SSD2119_H
 
+// dimensions of the LCD in pixels
+#define LCD_HEIGHT      320
+#define LCD_WIDTH       240
+
+
+
+
+
+
 // ************** LCD_GPIOInit ****************************
 // - Initializes Port B to be used as the data bus and
 //   Port A 4-7 as controller signals
@@ -331,6 +340,7 @@ void Touch_BeginWaitForTouch(void);
 #define SYSCTL_RCGC2_R          (*((volatile uint32_t *)0x400FE108))
 
 #define GPIO_PORTE_DIR_R        (*((volatile uint32_t *)0x40024400))
+#define GPIO_PORTE_DEN_R        (*((volatile uint32_t *)0x4002451C))
 
 //#define GPIO_PORTB_DATA_BITS_R  ((volatile uint32_t *)0x40005000)
 //#define GPIO_PORTB_DATA_R       (*((volatile uint32_t *)0x400053FC))

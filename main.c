@@ -1,4 +1,3 @@
-
 /*
   Copyright 2018 
   Andrew Cunningham,  andyham@uw.edu, 1610973
@@ -12,8 +11,27 @@
 */
 
 #include "header.h"
+#include "SSD2119.h"
 #include <stdio.h>
 
+unsigned short const Color4_Andrew[16] = {
+  0,                                            //0 – black                   (#000000) 	000000 	0
+ ((0x00>>3)<<11) | ((0x00>>2)<<5) | (0xAA>>3),  //1 – blue                    (#0000AA) 	000001 	1
+ ((0x00>>3)<<11) | ((0xAA>>2)<<5) | (0x00>>3),  //2 – green                   (#00AA00) 	000010 	2
+ ((0x00>>3)<<11) | ((0xAA>>2)<<5) | (0xAA>>3),  //3 – cyan                    (#00AAAA) 	000011 	3
+ ((0xAA>>3)<<11) | ((0x00>>2)<<5) | (0x00>>3),  //4 – red                     (#AA0000) 	000100 	4
+ ((0xAA>>3)<<11) | ((0x00>>2)<<5) | (0xAA>>3),  //5 – magenta                 (#AA00AA) 	000101 	5
+ ((0xAA>>3)<<11) | ((0x55>>2)<<5) | (0x00>>3),  //6 – brown                   (#AA5500) 	010100 	20
+ ((0xAA>>3)<<11) | ((0xAA>>2)<<5) | (0xAA>>3),  //7 – white / light gray      (#AAAAAA) 	000111 	7
+ ((0x55>>3)<<11) | ((0x55>>2)<<5) | (0x55>>3),  //8 – dark gray /bright black (#555555) 	111000 	56
+ ((0x55>>3)<<11) | ((0x55>>2)<<5) | (0xFF>>3),  //9 – bright blue             (#5555FF) 	111001 	57
+ ((0x55>>3)<<11) | ((0xFF>>2)<<5) | (0x55>>3),  //10 – bright green           (#55FF55) 	111010 	58
+ ((0x55>>3)<<11) | ((0xFF>>2)<<5) | (0xFF>>3),  //11 – bright cyan            (#55FFFF) 	111011 	59
+ ((0xFF>>3)<<11) | ((0x55>>2)<<5) | (0x55>>3),  //12 – bright red             (#FF5555) 	111100 	60
+ ((0xFF>>3)<<11) | ((0x55>>2)<<5) | (0xFF>>3),  //13 – bright magenta         (#FF55FF) 	111101 	61
+ ((0xFF>>3)<<11) | ((0xFF>>2)<<5) | (0x55>>3),  //14 – bright yellow          (#FFFF55) 	111110 	62
+ ((0xFF>>3)<<11) | ((0xFF>>2)<<5) | (0xFF>>3)   //15 – bright white           (#FFFFFF) 	111111 	63
+};
 
 /*****   Test Code Guide ***********************************************
   1: ADCTermometer(void)
@@ -33,8 +51,13 @@ void main(void) {
                         // offboard buttoms
   //LED_Init();           // initializes PA2, PA3, PA4 to interface with
                         // offboard LED
-  Timer_Init();         // enables timer 0 
+  //Timer_Init();         // enables timer 0 
+  // timer init is happening inside of pll_init now
   PLL_Init(16);           // sets cpu clock to 80MHz
+  //Timer_Init(16);
+  LCD_GPIOInit();
+  LCD_Init();
+  Touch_Init();
   ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
   welcomeFlash();       // display a friendly start-up flash
   Interrupt_Init();
@@ -48,6 +71,8 @@ void main(void) {
 
 void ADCThermometer(void) {
   __enable_interrupt();
+  LCD_SetCursor(0,0);
+  LCD_ColorFill(Color4_Andrew[1]);
   while(1) {
     //F_DATA = (timerbool ? BLUE : 0);
     // Sit here and do nothing
@@ -70,7 +95,6 @@ void Timer0_Handler(void) {
   }
   // resets
   Timer0_FLAG |= 0x00000001;  // clear timeout flag
-  // Andrew's comment
 }
 
 
@@ -92,22 +116,12 @@ void GPIOPortF_Handler(void) {
 }
 
 int TakeTemperature(void) {
-  int temp =  (int) (147.5 - (247.5 * ADC_OUTPUT) / 4096.0);
-  printf("Time %d TempRAW: %f TempConverted: %d\n", ++counter, (float) ADC_OUTPUT, temp);
-  // start of things to do every time
-  // ADCISC to 0b100
-  ADC_ISC |= (1<<3);
-  // ADC_ISC &= ~0x7;
-  // ADCDCISC to 0b100
-  ADC_D_ISC |= (1<<3);
-  // ADC_D_ISC &= ~0x7;
-  // step 8: turn on sequencer
-  ADC_SSCTL3 &= ~(1<<1);
-  // ADC_SAMPL_SEQ &= ~0x7;
-  ADCACTSS_SS3 |= (1<<3);
-  // step 9:  turn on sequencer ADCPSSI
-  ADC_SEQ_INIT |= 0x4; // want 0b100
-  ADC_SEQ_INIT &= ~0x3;
+  int temp =  (int) (147.5 - (247.5 * ADC0_SSFIFO3_R) / 4096.0);
+  // LCD_Printf("Time %d TempRAW: %f TempConverted: %d\n", ++counter, (float) ADC0_SSFIFO3_R, temp);
+  LCD_Printf("Hello world!, counter is: %d", ++counter);
+  
+  ADC_Andrew_Init();
+  
   
   return temp;
 }
@@ -139,18 +153,20 @@ void welcomeFlash() {
   // FSM_LED_Off();
 
   F_DATA = YELLOW;
-  waitn(2000000);
+  waitn(1000);
   F_DATA = GREEN;
-  waitn(2000000);
+  waitn(1000);
   F_DATA = BLUE;
-  waitn(2000000);
+  waitn(1000);
   F_DATA = RED;
-  waitn(5000000);
+  waitn(1000);
   F_DATA = 0x0;
-  waitn(100000);
+  waitn(1000);
 }
 
 // stalls the processor for about n clock cycles
 void waitn(int n) {
   while(n--){};
 }
+
+

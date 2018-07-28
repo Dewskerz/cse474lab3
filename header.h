@@ -9,8 +9,8 @@
   Defines many constants needed for initialization and declares many functions
 */
 
-#ifndef _373_HEADER_H_
-#define _373_HEADER_H_
+#ifndef _474_HEADER_H_
+#define _474_HEADER_H_
 //#include <tm4c123gh6pm.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -34,10 +34,24 @@
 
 // ******************************
 // definitions used for ADC
+#define SYSCTL_RCGCADC_ADC        (*((volatile uint32_t *)0x400FE638))
+#define SYSCTL_RCGCGPIO_ADC      (*((volatile uint32_t *)0x400FE608))
+#define GPIO_PORTE_AFSEL_ADC      (*((volatile uint32_t *)0x40024420))
+#define GPIO_PORTE_DEN_ADC        (*((volatile uint32_t *)0x4002451C))
+#define GPIO_PORTE_AMSEL_ADC      (*((volatile uint32_t *)0x40024528))
+#define ADC0_ACTSS_ADC            (*((volatile uint32_t *)0x40038000))
+#define ADC0_EMUX_ADC             (*((volatile uint32_t *)0x40038014))
+
+#define ADC0_SSMUX3_ADC           (*((volatile uint32_t *)0x400380A0))
+#define ADC0_SSCTL3_ADC           (*((volatile uint32_t *)0x400380A4))
+#define ADC0_SSFIFO3_R          (*((volatile uint32_t *)0x400380A8))
+
+
+// old
 #define SYSCTL_RCGCADC_R        (*((volatile uint32_t *)0x400FE638))
 #define ADC_OUTPUT              (*((volatile uint32_t *)0x400380A8))
 
-// #define ADC_BASE       ptr(0x400FE000)
+ #define ADC_BASE       ptr(0x400FE000)
 #define ADC0_MAP       0x40038000
 #define ADC_CONTROL    ptr(0x400FE638)
 #define ADCACTSS_SS3  ptr(0x40038000)
@@ -117,7 +131,7 @@ void Switch_Init(void);   // initializes PA5 and PA6 to interface with
                           // offboard buttoms
 void LED_Init(void);      // initializes PA2, PA3, PA4 to interface with
                          // offboard LED
-void Timer_Init(void);      // sets up the timer to count down from 16,000000
+void Timer_Init(int clockspeedmhz);      // sets up the timer to count down from 16,000000
 void Interrupt_Init(void);  // sets up functionality for
                             // the two onboard buttons to act as interrupts
                             // and the timer interrupt

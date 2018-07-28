@@ -37,7 +37,6 @@
 #include "tm4c123gh6pm.h"
 #include "SSD2119.h"
 
-  
 // 4 bit Color 	 red,green,blue to 16 bit color 
 // bits 15-11 5 bit red
 // bits 10-5  6-bit green
@@ -72,8 +71,8 @@ typedef struct {
 } coord;
 
 // dimensions of the LCD in pixels
-#define LCD_HEIGHT      320
-#define LCD_WIDTH       240
+#define LCD_HEIGHT      240
+#define LCD_WIDTH       320
 
 
 
@@ -186,7 +185,7 @@ void LCD_GPIOInit(void){
   wait++;                                // wait for port activation
   wait++;                                // wait for port activation
   // make PB0-7 outputs
-  GPIO_PORTB_DIR_R &= ~(0xFF);
+  GPIO_PORTB_DIR_R |= 0xFF;
   // disable alternate functions
   GPIO_PORTB_AFSEL_R &= ~(0xFF);
   // enable digital I/O on PB0-7
@@ -215,16 +214,20 @@ void LCD_GPIOInit(void){
 //  PA5     WR  Write control signal            | PA7 | PA6 | PA5 | PA4 |
 //  PA6     RS  Register/Data select signal     | CS  | RS  | WR  | RD  |
 //  PA7     CS  Chip select signal              -------------------------
-void LCD_WriteCommand(unsigned char data){volatile unsigned long delay;
+void LCD_WriteCommand(unsigned char data){volatile unsigned long delay = 0;
     LCD_CTRL = (3<<4);   // Set CS=0, RS=0, WR=1, RD=1 for LCD_CTRL
     LCD_DATA = 0x00;      // Write 0 as MSB of command data for LCD_DATA
     delay++;
-    LCD_CTRL &= (1<<5);  // Set WR low for LCD_CTRL
     delay++;
-    LCD_CTRL |= (1<<5);  // Set WR high for LCD_CTRL  
+    LCD_CTRL = 0x10;  //&= ~(1<<5);  // Set WR low for LCD_CTRL
+    delay++;
+    delay++;
+    LCD_CTRL = 0x30;  //|= (1<<5);  // Set WR high for LCD_CTRL  
     LCD_DATA = data;     // Write data as LSB of command data for LCD_DATA
     delay++;
-    LCD_CTRL &= (1<<5);  // Set WR low for LCD_CTRL
+    delay++;
+    LCD_CTRL = 0x10;  //  &= (1<<5);  // Set WR low for LCD_CTRL
+    delay++;
     delay++;
     LCD_CTRL = 0xF0;     // Set all high for LCD_CTRL
 }
@@ -1026,20 +1029,24 @@ void Touch_Init(void){
     // Initialize ADC for use with touchscreen
     ADC_Init();    
 
-    SYSCTL_RCGC2_R |= 0x1; // Activate PORTA GPIO clock
+    //SYSCTL_RCGC2_R |= 0x1; // Activate PORTA GPIO clock
+    SYSCTL_RCGCGPIO_R |= 0x1;
     
     wait++;
     wait++;
 
     // Configure PA2/PA3 for GPIO digital output
+    GPIO_PORTA_DEN_R |= (3<<2);
     GPIO_PORTA_DIR_R |= (3<<2);
     
-    SYSCTL_RCGC2_R |= (1<<4); // Activate PORTE GPIO clock
+    // SYSCTL_RCGC2_R |= (1<<4); // Activate PORTE GPIO clock
+    SYSCTL_RCGCGPIO_R |= (1<<4);
     wait++;
     wait++;
     
     // Configure PE4/PE5 for GPIO digital output
     GPIO_PORTE_DIR_R |= (3<<4);
+    GPIO_PORTE_DEN_R |= (3<<4);
 }
 
 // ************** ADC_Init *********************************
@@ -1050,40 +1057,40 @@ void Touch_Init(void){
 // Input: channel number
 // Output: none
 // *********************************************************
-//void ADC_Init(void){
-//    long wait = 0;
-//    
-//    // Set bit 0 in SYSCTL_RCGCADC_R to enable ADC0
-//    SYSCTL_RCGCADC_R    |=  0x01;
-//    for (wait = 0; wait < 50; wait++){}
-//        
-//    SYSCTL_RCGCGPIO_R |= 0x10;
-//    
-//    // Set ADC sample to 125KS/s
-//    ADC0_PC_R = 0x01;
-//  
-//    // Disable all sequencers for configuration
-//    ADC0_ACTSS_R &= ~0x000F;
-//
-//    // Set ADC0 SS3 to highest priority
-//    ADC0_SSPRI_R = 0x0123;    
-//    
-//    // Set bits 12-15 to 0x00 to enable software trigger on SS3
-//    ADC0_EMUX_R &= ~0xF000;
-//
-//    // Set sample channel for sequencer 3
-//    ADC0_SSMUX3_R &= 0xFFF0;    
-//    ADC0_SSMUX3_R += 9;
-//
-//    // TS0 = 0, IE0 = 1, END0 = 1, D0 = 0
-//    ADC0_SSCTL3_R = 0x006;
-//    
-//    // Disable ADC interrupts on SS3 by clearing bit 3
-//    ADC0_IM_R &= ~0x0008;
-//    
-//    // Re-enable sample sequencer 3
-//    ADC0_ACTSS_R |= 0x0008;
-//}
+void ADC_Init(void){
+    long wait = 0;
+    
+    // Set bit 0 in SYSCTL_RCGCADC_R to enable ADC0
+    SYSCTL_RCGCADC_R    |=  0x01;
+    for (wait = 0; wait < 50; wait++){}
+        
+    SYSCTL_RCGCGPIO_R |= 0x10;
+    
+    // Set ADC sample to 125KS/s
+    ADC0_PC_R = 0x01;
+  
+    // Disable all sequencers for configuration
+    ADC0_ACTSS_R &= ~0x000F;
+
+    // Set ADC0 SS3 to highest priority
+    ADC0_SSPRI_R = 0x0123;    
+    
+    // Set bits 12-15 to 0x00 to enable software trigger on SS3
+    ADC0_EMUX_R &= ~0xF000;
+
+    // Set sample channel for sequencer 3
+    ADC0_SSMUX3_R &= 0xFFF0;    
+    ADC0_SSMUX3_R += 9;
+
+    // TS0 = 0, IE0 = 1, END0 = 1, D0 = 0
+    ADC0_SSCTL3_R = 0x006;
+    
+    // Disable ADC interrupts on SS3 by clearing bit 3
+    ADC0_IM_R &= ~0x0008;
+    
+    // Re-enable sample sequencer 3
+    ADC0_ACTSS_R |= 0x0008;
+}
 
 // ************** ADC_Read *********************************
 // - Takes a sample from the ADC
