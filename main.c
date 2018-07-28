@@ -168,5 +168,3 @@ void welcomeFlash() {
 void waitn(int n) {
   while(n--){};
 }
-
-
