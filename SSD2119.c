@@ -71,8 +71,8 @@ typedef struct {
 } coord;
 
 // dimensions of the LCD in pixels
-#define LCD_HEIGHT      240
-#define LCD_WIDTH       320
+//#define LCD_HEIGHT      240
+//#define LCD_WIDTH       320
 
 
 
@@ -145,8 +145,6 @@ typedef struct {
 #define LCD_WR_PIN       (*((volatile unsigned long *)0x40004080))     // PA5
 #define LCD_RS_PIN       (*((volatile unsigned long *)0x40004100))     // PA6
 #define LCD_CS_PIN       (*((volatile unsigned long *)0x40004200))     // PA7
-#define LCD_CTRL         (*((volatile unsigned long *)0x400043C0))     // PA4-7
-#define LCD_DATA         (*((volatile unsigned long *)0x400053FC))     // PB0-7
 // ************** ADC_Init *********************************
 // - Initializes the ADC to use a specficed channel on SS3
 // *********************************************************
@@ -182,6 +180,7 @@ void LCD_GPIOInit(void){
   // activate parallel data pins
   // activate port B on RCGCGPIO
   SYSCTL_RCGCGPIO_R |= 0x2;
+  SYSCTL_RCGC2_R |= 0x2;
   wait++;                                // wait for port activation
   wait++;                                // wait for port activation
   // make PB0-7 outputs
@@ -190,17 +189,19 @@ void LCD_GPIOInit(void){
   GPIO_PORTB_AFSEL_R &= ~(0xFF);
   // enable digital I/O on PB0-7
   GPIO_PORTB_DEN_R |= 0xFF;
-  //GPIO_PORTB_DR8R_R |= 0xFF;
+  GPIO_PORTB_DR8R_R |= 0xFF;
   // activate control pins
   // activate port A
   SYSCTL_RCGCGPIO_R |= 0x1;
+  SYSCTL_RCGC2_R |= 0x1;
   wait++;                               // wait for port activation
   wait++;                               // wait for port activation
   GPIO_PORTA_DIR_R |= 0xF0; // make PA4-7 outputs
   GPIO_PORTA_AFSEL_R &= ~(0xF0); // disable alternate functions
   GPIO_PORTA_DEN_R |= 0xF0; // enable digital I/O on PA4-7
-  //GPIO_PORTA_DR8R_R
-  //GPIO_PORTA_PCTL_R
+  GPIO_PORTA_DR8R_R |= 0xF0;
+  GPIO_PORTA_PCTL_R |= 0xF0;
+  LCD_CTRL |= 0xF0;
   
   
    for (wait = 0; wait < 500; wait++) {}
@@ -215,21 +216,21 @@ void LCD_GPIOInit(void){
 //  PA6     RS  Register/Data select signal     | CS  | RS  | WR  | RD  |
 //  PA7     CS  Chip select signal              -------------------------
 void LCD_WriteCommand(unsigned char data){volatile unsigned long delay = 0;
-    LCD_CTRL = (3<<4);   // Set CS=0, RS=0, WR=1, RD=1 for LCD_CTRL
-    LCD_DATA = 0x00;      // Write 0 as MSB of command data for LCD_DATA
+    LCD_CTRL = 0x30;   // Set CS=0, RS=0, WR=1, RD=1 for LCD_CTRL
+    LCD_DATA &= ~(1<<7);      // Write 0 as MSB of command data for LCD_DATA
     delay++;
     delay++;
-    LCD_CTRL = 0x10;  //&= ~(1<<5);  // Set WR low for LCD_CTRL
+    LCD_CTRL &= ~(1<<5);  // Set WR low for LCD_CTRL
     delay++;
     delay++;
-    LCD_CTRL = 0x30;  //|= (1<<5);  // Set WR high for LCD_CTRL  
+    LCD_CTRL |= (1<<5);  // Set WR high for LCD_CTRL  
     LCD_DATA = data;     // Write data as LSB of command data for LCD_DATA
     delay++;
     delay++;
-    LCD_CTRL = 0x10;  //  &= (1<<5);  // Set WR low for LCD_CTRL
+    LCD_CTRL &= ~(1<<5);  // Set WR low for LCD_CTRL
     delay++;
     delay++;
-    LCD_CTRL = 0xF0;     // Set all high for LCD_CTRL
+    LCD_CTRL |= 0xF0;     // Set all high for LCD_CTRL
 }
 
 // ************** LCD_WriteData ***************************
@@ -1029,7 +1030,7 @@ void Touch_Init(void){
     // Initialize ADC for use with touchscreen
     ADC_Init();    
 
-    //SYSCTL_RCGC2_R |= 0x1; // Activate PORTA GPIO clock
+    SYSCTL_RCGC2_R |= 0x1; // Activate PORTA GPIO clock
     SYSCTL_RCGCGPIO_R |= 0x1;
     
     wait++;

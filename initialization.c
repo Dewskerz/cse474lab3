@@ -53,9 +53,11 @@ void LED_Init(void) {
 // initialize timer0
 void Timer_Init(int clockspeedmhz) {
   RCGCTIMER |= 0x01; // enable the timer
-  Timer0_CTL &= ~0x00000001; // lock the timer
-  Timer0_CFG = 0x00000000; // set the 32 bit configuration
-  Timer0_TnMR = 0x00000002; // configure TnMR field to A
+  Timer0_CTL &= ~0x01; // lock the timer
+  Timer0_CFG &= ~07; // set the 32 bit configuration
+  Timer0_TnMR |= 0x02; // configure TnMR field to A
+  Timer0_TnMR &= ~0x01;
+  Timer0_TnMR &= ~0x20;
   //Timer0_TnILR = 0x00F42400; // start interval 16,000000
   Timer0_TnILR = (clockspeedmhz * 1000000);
   Timer0_INTERRUPT |= 0x11;  // turn on the interrupt
@@ -97,9 +99,9 @@ void PLL_Init(int speed) {
   RCC &= 0x57F;  // 0b10101111111
   // step 4, select oscillator source
   // RCC &= ~(3<<4);  // 0b001111
-  RCC2 &= ~(7<<4); // 0b0001111
+  RCC2 &= ~(0x70); // 0b0001111
   // step 5, activate PLL by bit 13 to 0
-  RCC2 &= ~(1<13);
+  RCC2 &= ~(1<<13);
   // step 6, set system divider, bit 30 to 1
   RCC2 |= (1<<30);
   // step 7, set sys divider 28-22 to 0x4
@@ -119,7 +121,6 @@ void PLL_Init(int speed) {
   // step 8, wait for PLL to lock
   do {} while ((RCC & 0x20) == 0x20);
   // step 8b, disable bypass
-  // RCC &= ~(1<<11);
   RCC2 &= ~(1<<11);
   //Timer0_TnILR = 0x4C4B400; // start interval 80,000,000
   //Timer0_TnILR = (speed * 1000000);
@@ -127,7 +128,7 @@ void PLL_Init(int speed) {
 }
 
 void ADC_Andrew_Init(void) {
-  /*
+  
   // step 1 enable clock on RCGCADC
   SYSCTL_RCGCADC_ADC |= 0x01;
   // step 2 enable appropriate RCGCGPIO register
@@ -135,56 +136,30 @@ void ADC_Andrew_Init(void) {
   // set that pin, pin6, to 1 in AFSEL
   // so clear that GPIODEN
   // and setting corresponding AMSEL in GPIOAMSEL
-  SYSCTL_RCGCGPIO_ADC |= 0x10;
-  GPIO_PORTE_AFSEL_ADC |= 0x8;
-  GPIO_PORTE_DEN_ADC &= ~(0x8);
-  GPIO_PORTE_AMSEL_ADC |= (0x8);
+  // Note skipping for now because we're not triggering ofcboard
+  //SYSCTL_RCGCGPIO_ADC |= 0x10;
+  //GPIO_PORTE_AFSEL_ADC |= 0x8;
+  //GPIO_PORTE_DEN_ADC &= ~(0x8);
+  //GPIO_PORTE_AMSEL_ADC |= (0x8);
   
   //  disable the sample sequencer
-  ADC0_ACTSS_ADC = 0;
-  // configure the multiplexer
-  ADC0_EMUX_ADC = (5<<11);
-  ADC0_SSMUX3_ADC &= ~(0xF);
-  ADC0_SSCTL3_ADC = 0xA;
-  ADC0_ACTSS_ADC = 1;
-  */
-  // old shit
-  // step 1 enable clock to ADC & GPIO module
-  ADC_CONTROL |= 0x01;  // want 0x01
-  // step 2 choose and disable sample sequence ADCACTSS
-  // ADCACTSS_SS3 = 0x0;  // want 0b100
-  ADCACTSS_SS3 &= ~(1<<2);  // want 0b0xx
-  // step 3 choose software trigger ADCEMUX
-  ADC_MUX = (5<<12);
-  ADC_MUX |= (1<<12);
-  ADC_MUX &= ~(1<<13);
-  ADC_MUX |= (1<<14);
-  ADC_MUX &= ~(1<<15);
-  // step 3b
-  // TAOTE bit 5 of general purpose timer control to true
+  ADC0_ACTSS_ADC &= ~(1<<3);
+  // configure the multiplexer to be 0b0101
+  // ADC0_EMUX_ADC = (5<<11);
+  ADC0_EMUX_ADC &= ~(15<<12);
+  ADC0_EMUX_ADC |= (5<<12);
+  // update bit 5 of the timer to allow ADC to be triggered by timer
   Timer0_CTL |= (1<<5);
-  // step 4 skip
-  // step 5 set ACD control to 0b1110
-  ADC_SSCTL3 = 0xE;
-  // set ADCIM to 0b100
-  ADC_IM |= 0x8;
-  //ADC_IM &= ~0x7;
-  
-  // start of things to do every time
-  // ADCISC to 0b100
-  ADC_ISC |= (1<<3);
-  // ADC_ISC &= ~0x7;
-  // ADCDCISC to 0b100
-  ADC_D_ISC |= (1<<3);
-  // ADC_D_ISC &= ~0x7;
-  // step 8: turn on sequencer
-  ADC_SSCTL3 &= ~(1<<1);
-  ADC_SSCTL3 |= 0xF;
-  // ADC_SAMPL_SEQ &= ~0x7;
-  ADCACTSS_SS3 |= (1<<2);
-  // step 9:  turn on sequencer ADCPSSI
-  ADC_SEQ_INIT |= 0x4; // want 0b100
-  ADC_SEQ_INIT &= ~0x3;
-  
-  //TakeTemperature();
+  // update SSCTL3 to be 0b0111
+  ADC0_SSCTL3_ADC &= ~(0xF);
+  ADC0_SSCTL3_ADC |= 0xE;
+  // update IM to mask seq 3
+  ADC0_IM_ADC |= (1<<3);
+  // Jeff's extra step
+  ADC0_ISC_ADC |= (1<<3);
+  ADC0_DCISC_ADC |= (1<<3);
+  // enable the sample sequencer
+  ADC0_ACTSS_ADC |= (1<<3);
+  // start a new conversion
+  ADC0_PSSI_ADC |= (1<<3);
 }

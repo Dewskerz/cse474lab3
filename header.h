@@ -36,15 +36,18 @@
 // definitions used for ADC
 #define SYSCTL_RCGCADC_ADC        (*((volatile uint32_t *)0x400FE638))
 #define SYSCTL_RCGCGPIO_ADC      (*((volatile uint32_t *)0x400FE608))
+#define ADC0_ACTSS_ADC            (*((volatile uint32_t *)0x40038000))
+#define ADC0_EMUX_ADC             (*((volatile uint32_t *)0x40038014))
+#define ADC0_IM_ADC               (*((volatile uint32_t *)0x40038008))
+#define ADC0_ISC_ADC              (*((volatile uint32_t *)0x4003800C))
+#define ADC0_DCISC_ADC            (*((volatile uint32_t *)0x40038034))
+#define ADC0_PSSI_ADC             (*((volatile uint32_t *)0x40038028))
+#define ADC0_SSCTL3_ADC           (*((volatile uint32_t *)0x400380A4))
+#define ADC0_SSFIFO3_ADC          (*((volatile uint32_t *)0x400380A8))
+
 #define GPIO_PORTE_AFSEL_ADC      (*((volatile uint32_t *)0x40024420))
 #define GPIO_PORTE_DEN_ADC        (*((volatile uint32_t *)0x4002451C))
 #define GPIO_PORTE_AMSEL_ADC      (*((volatile uint32_t *)0x40024528))
-#define ADC0_ACTSS_ADC            (*((volatile uint32_t *)0x40038000))
-#define ADC0_EMUX_ADC             (*((volatile uint32_t *)0x40038014))
-
-#define ADC0_SSMUX3_ADC           (*((volatile uint32_t *)0x400380A0))
-#define ADC0_SSCTL3_ADC           (*((volatile uint32_t *)0x400380A4))
-#define ADC0_SSFIFO3_R          (*((volatile uint32_t *)0x400380A8))
 
 
 // old
