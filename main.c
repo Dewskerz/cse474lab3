@@ -40,7 +40,7 @@ unsigned short const Color4_Andrew[16] = {
 #define TEST_CODE 1
 
 bool timerbool = false;
-int counter = 0;
+int counter =0;
 
 void main(void) {
   PortF_LED_Init();     // initialize onboard port F LEDs
@@ -54,8 +54,8 @@ void main(void) {
   //timer init is happening inside of pll_init now // Timer_Init(); // enables timer 0 
   PLL_Init(80);           // sets cpu clock to 80MHz
   LCD_Init();
-  //Touch_Init();
-  ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
+  Touch_Init();
+  //ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
   welcomeFlash();       // display a friendly start-up flash
   Interrupt_Init();
   __enable_interrupt();
@@ -88,13 +88,16 @@ void Timer0_Handler(void) {
   
   int temp = TakeTemperature();
   SetLED_Temp(temp);
-  // printf("Time %d Temp: %d\n", ++counter, temp);
-  //if (temp != 0) {
-  //  SetLED_Temp(temp);
-  //} else { 
-  //  F_DATA = 0x0;
-  //}
-  // resets
+  // handle the LCD
+  LCD_SetCursor(0,0);
+  //LCD_PrintInteger(temp);
+  //LCD_PrintInteger(++counter);
+  //LCD_Printf("Current Counter: %d\nTemp: %d\nRAW: %d\n", ++counter, temp, ADC0_SSFIFO3_ADC);
+  unsigned long x = Touch_ReadX();
+  unsigned long y = Touch_ReadY();
+  LCD_Printf("Current Counter: %d\nx: %d\ny: %d\n", ++counter, x, y);
+  //printf("Time: %d Temp: %d RAW: %d Temp1: %d\n", ++counter, temp2, ADC0_SSFIFO3_ADC, temp1);
+  //printf("Time: %d Temp: %d RAW:%d\n", counter, temp, ADC0_SSFIFO3_ADC);
   Timer0_FLAG |= 0x01;  // clear timeout flag
 }
 
@@ -117,18 +120,14 @@ void GPIOPortF_Handler(void) {
 }
 
 int TakeTemperature(void) {
-  //int temp1 = (int) (147.5 - (247.5 * ADC0_SSFIFO3_ADC) / 4096.0);
+  //int temp = (int) (147.5 - (247.5 * ADC0_SSFIFO3_ADC) / 4096.0);
   // this conversion may not be right. I just calculated it with a room temperature
   // tiva
-  int temp = (int)(ADC0_SSFIFO3_ADC / 15.24);
-  //printf("Time: %d Temp: %d RAW: %d Temp1: %d\n", ++counter, temp2, ADC0_SSFIFO3_ADC, temp1);
-  //float VREFP = 3.3;
-  //float VREFN = 0;
-  //int temp = (int) (147.5 - ((75 * (VREFP - VREFN) * ADC0_SSFIFO3_ADC)) / 4096.0);
-  printf("Time: %d Temp: %d \n", ++counter, temp);
-  LCD_SetCursor(0,0);
-  LCD_PrintInteger(temp);
-  
+  //int temp = (int)(ADC0_SSFIFO3_ADC / 15.24);
+  float VREFP = 3.3;
+  float VREFN = 0;
+  int temp = (int) (147.5 - ((75 * (VREFP - VREFN) * ADC0_SSFIFO3_ADC)) / 4096.0);
+ 
   // reset raw interrupt to 0
   ADC0_ISC_ADC |= (1<<3);
   // reset digital comparator interrupt status to 0
