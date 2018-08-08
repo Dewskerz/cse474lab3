@@ -10,11 +10,16 @@
 
 */
 
+#define TEST_CODE 2
+
 #include "header.h"
 #include "SSD2119.h"
 #include <stdio.h>
+#include <math.h>
 
-unsigned short const Color4_Andrew[16] = {
+#define PI 3.14159265
+
+unsigned short Color4_Andrew[16] = {
   0,                                            //0 – black                   (#000000) 	000000 	0
  ((0x00>>3)<<11) | ((0x00>>2)<<5) | (0xAA>>3),  //1 – blue                    (#0000AA) 	000001 	1
  ((0x00>>3)<<11) | ((0xAA>>2)<<5) | (0x00>>3),  //2 – green                   (#00AA00) 	000010 	2
@@ -33,71 +38,126 @@ unsigned short const Color4_Andrew[16] = {
  ((0xFF>>3)<<11) | ((0xFF>>2)<<5) | (0xFF>>3)   //15 – bright white           (#FFFFFF) 	111111 	63
 };
 
+// start: depreciated helper for calibrating
+void calibrate(unsigned long xraw,  unsigned long yraw);
+int xmin = 9999999;
+int xmax = 0;
+int ymin = 9999999;
+int ymax = 0;
+// end: depreciated helper for calibrating
+
 /*****   Test Code Guide ***********************************************
   1: ADCTermometer(void)
       LAB3 part A
+  2: LCDCube(void)
+      LAB3 Part D
+      Draws a 3d rotating cube
 */
-#define TEST_CODE 1
 
 bool timerbool = false;
-int counter =0;
+int counter = 0;
+int currclockspeed = 80;
+unsigned short xp;
+unsigned short yp;
 
 void main(void) {
-  PortF_LED_Init();     // initialize onboard port F LEDs
-                        // initialize onboard buttons
-  
-  //not needed for lab3 part a
-  Switch_Init();        // initializes PA5 and PA6 to interface with
-                        // offboard buttoms
-  //LED_Init();           // initializes PA2, PA3, PA4 to interface with
-                        // offboard LED
-  //timer init is happening inside of pll_init now // Timer_Init(); // enables timer 0 
-  PLL_Init(80);           // sets cpu clock to 80MHz
-  LCD_Init();
-  Touch_Init();
-  //ADC_Andrew_Init();    // starts the ADC to take cpu temperatures and starts first sample
-  welcomeFlash();       // display a friendly start-up flash
-  Interrupt_Init();
-  __enable_interrupt();
-  
   switch (TEST_CODE) {
   case 1:
-    
     ADCThermometer();
+    break;
+  case 2:
+    LCDCube();
     break;
   } 
 }
 
 void ADCThermometer(void) {
-  
-  //LCD_SetCursor(0,0);
-  LCD_ColorFill(Color4_Andrew[1]);
+  Enable_All_GPIO();              // just turn on all of the GPIO Ports all at once
+  PortF_LED_Init();              // initialize onboard port F LEDs and onboard button
+  PLL_Init(currclockspeed);      // sets cpu clock to 80MHz
+  Timer_Init(currclockspeed);  //ADC_Andrew_Init();
+  ADC_Andrew_Init();
+  LCD_Init();
+  Interrupt_Init();
+  __enable_interrupt();
+  // starts the ADC to take cpu temperatures and starts first sample
   while(1) {
-    //F_DATA = (timerbool ? BLUE : 0);
-    // Sit here and do nothing
-    // while the handlers do all the work
-    
+    //update once ever second
+    if (timerbool) {
+      // take the temperature and set the LED
+      int temp = TakeTemperature();
+      SetLED_Temp(temp);
+      // display some useful information on the LCD
+      // note, touch features are disabled right now
+      LCD_SetCursor(0,0);
+      LCD_Printf("temp:    \nclockspeed:    \n");
+      LCD_SetCursor(0,0);
+      LCD_Printf("temp: %d\nclockspeed: %d\n", temp, currclockspeed);
+      timerbool = !timerbool;
+    }
+  }
+}
+
+// draw a 3D rotating cube that is started and stopped by button
+void LCDCube(void) {
+  Enable_All_GPIO();              // just turn on all of the GPIO Ports all at once
+  PLL_Init(currclockspeed);      // sets cpu clock to 80MHz
+  Timer_Init(currclockspeed / 4);
+  LCD_Init();
+  Touch_Init();
+  Interrupt_Init();
+  __enable_interrupt();
+  
+  bool cuberotate = true;
+  float theta = 0.0;
+  //x range (1492, 3019) or 1527
+  //y range (1391, 2330) or 939
+  while(1) {
+    if (timerbool) {
+      LCD_SetCursor(0, 0);
+      LCD_DrawFilledCircle(xp, yp, 2, Color4_Andrew[0]);
+      LCD_DrawFilledRect(5,210,150,30,Color4_Andrew[2]);
+      LCD_DrawFilledRect(165,210,150,30,Color4_Andrew[4]); 
+      
+      
+      unsigned long xraw = Touch_ReadX();
+      unsigned long yraw = Touch_ReadY();
+      //calibrate(xraw, yraw);
+      //888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
+      xp = 320 - (((xraw - 1492)*320) / 1527);
+      yp = 240 - (((yraw - 1400) * 240) / 1200);
+      LCD_Printf("Pressed(%d,%d)\n", xp, yp);
+      if (currclockspeed < 10) {
+         LCD_Goto(13,0);
+         LCD_Printf(" \n");
+      }
+      
+      if (xp < 160 && yp > 200) cuberotate = true;
+      if (xp > 160 && yp > 200) cuberotate = false;
+      if (cuberotate == true) {
+        UpdateSquare(theta, 35);
+        theta += (PI / 12.0);
+        if (theta > PI * 2.0) theta = 0;
+      }
+      
+      
+      LCD_DrawFilledCircle(xp, yp, 2, Color4_Andrew[4]);
+      timerbool = !timerbool;
+    }
   }
 }
 
 
 
-
+/*
+All Timer0_Handler does is set the timerbool flag
+and update the counter on the lcd
+*/
 void Timer0_Handler(void) {
   timerbool = !timerbool;
-  
-  int temp = TakeTemperature();
-  SetLED_Temp(temp);
-  // handle the LCD
-  LCD_SetCursor(0,0);
-  //LCD_PrintInteger(temp);
-  //LCD_PrintInteger(++counter);
-  //LCD_Printf("Current Counter: %d\nTemp: %d\nRAW: %d\n", ++counter, temp, ADC0_SSFIFO3_ADC);
-  unsigned long x = Touch_ReadX();
-  unsigned long y = Touch_ReadY();
-  LCD_Printf("Current Counter: %d\nx: %d\ny: %d\n", ++counter, x, y);
-  //printf("Time: %d Temp: %d RAW: %d Temp1: %d\n", ++counter, temp2, ADC0_SSFIFO3_ADC, temp1);
-  //printf("Time: %d Temp: %d RAW:%d\n", counter, temp, ADC0_SSFIFO3_ADC);
+  if ((++counter) > 999) counter = 0;
+  LCD_SetCursor(302, 0);
+  LCD_Printf("%d", counter);
   Timer0_FLAG |= 0x01;  // clear timeout flag
 }
 
@@ -107,23 +167,21 @@ void GPIOPortF_Handler(void) {
   switch(F_DATA & 0x11) {
         case 0x10: //switch 1 is pressed
           // PF4 - SW1 - 80MHz
-          PLL_Init(80);
+          currclockspeed = 80;
+          PLL_Init(currclockspeed);
+          Timer_Init(currclockspeed);
           break;
         case 0x01: //switch 2 is pressed
           // PF0 - SW2 - 4MHz
-          PLL_Init(4);
+          currclockspeed = 4;
+          PLL_Init(currclockspeed);
+          Timer_Init(currclockspeed);
           break;
   }
-  
-  
   PORTF_FLAG |= 0x11;
 }
 
 int TakeTemperature(void) {
-  //int temp = (int) (147.5 - (247.5 * ADC0_SSFIFO3_ADC) / 4096.0);
-  // this conversion may not be right. I just calculated it with a room temperature
-  // tiva
-  //int temp = (int)(ADC0_SSFIFO3_ADC / 15.24);
   float VREFP = 3.3;
   float VREFN = 0;
   int temp = (int) (147.5 - ((75 * (VREFP - VREFN) * ADC0_SSFIFO3_ADC)) / 4096.0);
@@ -133,7 +191,7 @@ int TakeTemperature(void) {
   // reset digital comparator interrupt status to 0
   ADC0_DCISC_ADC |= (1<<3);
   // reset the sample sequencer
-  ADC0_SSCTL3_ADC &= ~(1<<3);
+  ADC0_SSCTL3_ADC &= ~(1<<1);
   // start a new sequence
   ADC0_PSSI_ADC |= (1<<3);
   
@@ -158,23 +216,70 @@ void SetLED_Temp(int temp) {
   }
 }
 
-// a small welcome flash, to acknowledge start of the program
-void welcomeFlash() {
-  // FSM_LED_Off();
-
-  F_DATA = YELLOW;
-  waitn(1000);
-  F_DATA = GREEN;
-  waitn(1000);
-  F_DATA = BLUE;
-  waitn(1000);
-  F_DATA = RED;
-  waitn(1000);
-  F_DATA = 0x0;
-  waitn(1000);
+void calibrate(unsigned long xraw, unsigned long yraw) {
+  if (xraw > xmax) {
+      xmax = xraw;
+  }
+  if (xraw < xmin) {
+    xmin = xraw;
+  }
+  if (yraw > ymax) {
+    ymax = yraw;
+  }
+  if (yraw < ymin) {
+    ymin = yraw;
+  }
+  LCD_Printf("X_R: (%d,%d)\n", xmin, xmax);
+  LCD_Printf("Y_R: (%d,%d)\n", ymin, ymax);
 }
 
-// stalls the processor for about n clock cycles
-void waitn(int n) {
-  while(n--){};
+//bool first = true;
+void UpdateSquare(float theta, unsigned short radius) {
+  static float x[] = {35.5,0.5,-35.5,0.5};
+  static float y[] = {0.5,35.5,0.5,-35.5};
+  static float n = 1.0;
+  
+  short offsetx = 150;
+  short offsety = 90;
+  
+  DrawSquare(offsetx + x[0],offsetx + x[1],offsetx + x[2],offsetx + x[3],offsety + y[0],offsety + y[1],offsety + y[2],offsety + y[3],0);
+  
+  //theta += PI / 4.0;
+  /*
+  x[0] =  radius * cos(theta);
+  x[1] =  radius * cos(theta + (PI / 2));
+  x[2] =  radius * cos(theta + (PI));
+  x[3] =  radius * cos(theta + ((3.0 * PI) / 2.0));
+  
+  y[0] = radius * sin(theta);
+  y[1] =  radius * sin(theta + (PI / 2));
+  y[2] =  radius * sin(theta + (PI));
+  y[3] =  radius * sin(theta + ((3.0 * PI) / 2.0));
+  */
+  // update original
+  // factor in offset
+  
+  int fuckinggoddamnmotherfuckingbreakpointherefucker = 0xfff;
+  
+  for (int i = 0; i < 4; i++) {
+    float xtemp = x[i]*cos(theta) - y[i]*sin(theta);
+    x[i] = xtemp*1.3;
+    float ytemp = y[i]*cos(theta) + x[i]*sin(theta);
+    y[i] = ytemp*1.3;
+  }
+  n++;
+  
+  
+  DrawSquare(offsetx + x[0],offsetx + x[1],offsetx + x[2],offsetx + x[3],offsety + y[0],offsety + y[1],offsety + y[2],offsety + y[3],15);
+  
+  //int fuckinggoddamnmotherfuckingbreakpointherefucker = 0xfff;
+}
+
+void DrawSquare(unsigned short x1, unsigned short x2, unsigned short x3, unsigned short x4, 
+                unsigned short y1, unsigned short y2, unsigned short y3, unsigned short y4, 
+                unsigned short color) {
+  LCD_DrawLine(x1, y1, x2, y2, Color4_Andrew[color]);
+  LCD_DrawLine(x2,y2,x3,y3, Color4_Andrew[color]);
+  LCD_DrawLine(x3,y3,x4,y4, Color4_Andrew[color]);
+  LCD_DrawLine(x4,y4,x1,y1, Color4_Andrew[color]);
 }

@@ -20,6 +20,8 @@
 /// **************************************************************************
 /// ************* Macro Definitions
 
+#define SYSCTL_RCGCGPIO      (*((volatile uint32_t *)0x400FE608))
+
 #define RCC2TEST (*((volatile uint32_t *)0x400FE070))
 
 #define RCC_BASE            0x400FE000   
@@ -36,7 +38,7 @@
 // ******************************
 // definitions used for ADC
 #define SYSCTL_RCGCADC_ADC        (*((volatile uint32_t *)0x400FE638))
-#define SYSCTL_RCGCGPIO_ADC      (*((volatile uint32_t *)0x400FE608))
+
 #define ADC0_ACTSS_ADC            (*((volatile uint32_t *)0x40038000))
 #define ADC0_EMUX_ADC             (*((volatile uint32_t *)0x40038014))
 #define ADC0_IM_ADC               (*((volatile uint32_t *)0x40038008))
@@ -125,9 +127,15 @@
 /// **************************************************************************
 /// ************* Function Declarations
 void ADCThermometer(void);
+void LCDCube(void);
+void UpdateSquare(float theta, unsigned short radius);
+void DrawSquare(unsigned short x1, unsigned short x2, unsigned short x3, unsigned short x4, 
+                unsigned short y1, unsigned short y2, unsigned short y3, unsigned short y4, 
+                unsigned short color);
 
 /******************/
 //Initializations
+void Enable_All_GPIO(void); // turns on all the GPIO Ports
 void PortF_LED_Init();     // initialize onboard port F LEDs
                            // initialize onboard buttons
                            // does not use tm4c123gh6pm.h

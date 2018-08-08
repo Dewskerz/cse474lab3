@@ -176,10 +176,9 @@ void ADC_SetChannel(unsigned char channelNum);
 // ********************************************************
 void LCD_GPIOInit(void){
   unsigned long wait = 0;
-    
   // activate parallel data pins
   // activate port B on RCGCGPIO
-  SYSCTL_RCGCGPIO_R |= 0x2;
+  // SYSCTL_RCGCGPIO_R |= 0x2;
   SYSCTL_RCGC2_R |= 0x2;
   wait++;                                // wait for port activation
   wait++;                                // wait for port activation
@@ -192,7 +191,7 @@ void LCD_GPIOInit(void){
   GPIO_PORTB_DR8R_R |= 0xFF;
   // activate control pins
   // activate port A
-  SYSCTL_RCGCGPIO_R |= 0x1;
+  // SYSCTL_RCGCGPIO_R |= 0x1;
   SYSCTL_RCGC2_R |= 0x1;
   wait++;                               // wait for port activation
   wait++;                               // wait for port activation
@@ -202,7 +201,6 @@ void LCD_GPIOInit(void){
   GPIO_PORTA_DR8R_R |= 0xF0;
   GPIO_PORTA_PCTL_R |= 0xF0;
   LCD_CTRL |= 0xF0;
-  
   
    for (wait = 0; wait < 500; wait++) {}
 }
@@ -1030,24 +1028,26 @@ void Touch_Init(void){
     // Initialize ADC for use with touchscreen
     ADC_Init();    
 
-    SYSCTL_RCGC2_R |= 0x1; // Activate PORTA GPIO clock
-    SYSCTL_RCGCGPIO_R |= 0x1;
+    // should never access 608
+    // they are all powered on all at once at the beginning
+    //SYSCTL_RCGCGPIO_R |= 0x1;
+    SYSCTL_RCGC2_R |= 0x1;
     
-    wait++;
-    wait++;
+    while (wait < 100) {wait ++;}
 
     // Configure PA2/PA3 for GPIO digital output
-    GPIO_PORTA_DEN_R |= (3<<2);
+    //GPIO_PORTA_DEN_R |= (3<<2);
     GPIO_PORTA_DIR_R |= (3<<2);
     
-    // SYSCTL_RCGC2_R |= (1<<4); // Activate PORTE GPIO clock
-    SYSCTL_RCGCGPIO_R |= (1<<4);
-    wait++;
-    wait++;
+    SYSCTL_RCGC2_R |= (1<<4); // Activate PORTE GPIO clock
+    // should never access 608
+    // they are all powered on all at once at the beginning
+    // SYSCTL_RCGCGPIO_R |= (1<<4);
+    while (wait < 200) {wait ++;}
     
     // Configure PE4/PE5 for GPIO digital output
     GPIO_PORTE_DIR_R |= (3<<4);
-    GPIO_PORTE_DEN_R |= (3<<4);
+    //GPIO_PORTE_DEN_R |= (3<<4);
 }
 
 // ************** ADC_Init *********************************
@@ -1064,8 +1064,10 @@ void ADC_Init(void){
     // Set bit 0 in SYSCTL_RCGCADC_R to enable ADC0
     SYSCTL_RCGCADC_R    |=  0x01;
     for (wait = 0; wait < 50; wait++){}
-        
-    SYSCTL_RCGCGPIO_R |= 0x10;
+    
+    // should never access 608
+  // they are all powered on all at once at the beginning
+    //SYSCTL_RCGCGPIO_R |= 0x10;
     
     // Set ADC sample to 125KS/s
     ADC0_PC_R = 0x01;
@@ -1106,7 +1108,7 @@ unsigned long ADC_Read(void){
     ADC0_PSSI_R = 0x008; 
     
     // Wait for SS3 RIS bit to be set to 1
-    while((ADC0_RIS_R&0x08)==0){};
+    while((ADC0_RIS_R&0x08)==0x0){};
         
     // Read 12-bit result from ADC from FIFO
     result = ADC0_SSFIFO3_R&0xFFF;

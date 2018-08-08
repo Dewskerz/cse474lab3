@@ -11,6 +11,10 @@
 
 // defines some header functions used in main.c
 
+void Enable_All_GPIO(void) {
+ SYSCTL_RCGCGPIO |= 0x1F;
+}
+
 // initlize the onboard portF LED
 // initialize the two onboard switches
 void PortF_LED_Init() {
@@ -77,28 +81,14 @@ void Interrupt_Init(void) {
 }
 
 void PLL_Init(int speed) {
-  //RCC2TEST = 0xDEADBEEF;
-  
-  // totally cheated for 80MHz
-  //RCC = 0x024E3540;
-  //RCC2 = 0xC2404000; // 80MHZ
-  // RCC2 = 0xC4C04000; // 4 MHZ
-  // RCC2 = 0xC0404000; // 400 MHZ
-  // RCC2 = 0xCC404000;  // 16 MHZ
-  //return;
-  
-  //i think this is alllllllll wrong
-  
   // step 1, enable the 31 bit
   RCC2 |= (0x80000000);
   // step 2, bypass PLL, bit 11 = 0
-  // RCC |= (1<<11);
   RCC2 |= (1<<11);
   // step 3, select crystal, bits 10-6 10101
   RCC |= 0x540;  // 0b10101000000
   RCC &= 0x57F;  // 0b10101111111
   // step 4, select oscillator source
-  // RCC &= ~(3<<4);  // 0b001111
   RCC2 &= ~(0x70); // 0b0001111
   // step 5, activate PLL by bit 13 to 0
   RCC2 &= ~(1<<13);
@@ -109,43 +99,23 @@ void PLL_Init(int speed) {
   RCC |= (1<<22);
   
   // sart the mask
-  // int rccmask =  ~(0x7C00000);
   int rcc2mask = ~(0x1FC00000);
-  // rccmask = rccmask | (4<<22);
-  // rcc2mask = rcc2mask | (24<<22);
-  // RCC &= rccmask;
   RCC2 &= rcc2mask;
   int n = (400 / speed) - 1;
-  // RCC |= (n<<22);
   RCC2 |= (n<<22);
   // step 8, wait for PLL to lock
   do {} while ((RCC & 0x20) == 0x20);
   // step 8b, disable bypass
   RCC2 &= ~(1<<11);
-  //Timer0_TnILR = 0x4C4B400; // start interval 80,000,000
-  //Timer0_TnILR = (speed * 1000000);
-  Timer_Init(speed);
 }
 
 void ADC_Andrew_Init(void) {
   
-  // step 1 enable clock on RCGCADC
+  // enable clock on RCGCADC
   SYSCTL_RCGCADC_ADC |= 0x01;
-  // step 2 enable appropriate RCGCGPIO register
-  // in this case we need PE3
-  // set that pin, pin6, to 1 in AFSEL
-  // so clear that GPIODEN
-  // and setting corresponding AMSEL in GPIOAMSEL
-  // Note skipping for now because we're not triggering ofcboard
-  //SYSCTL_RCGCGPIO_ADC |= 0x10;
-  //GPIO_PORTE_AFSEL_ADC |= 0x8;
-  //GPIO_PORTE_DEN_ADC &= ~(0x8);
-  //GPIO_PORTE_AMSEL_ADC |= (0x8);
-  
   //  disable the sample sequencer
   ADC0_ACTSS_ADC &= ~(1<<3);
   // configure the multiplexer to be 0b0101
-  // ADC0_EMUX_ADC = (5<<11);
   ADC0_EMUX_ADC &= ~(15<<12);
   ADC0_EMUX_ADC |= (5<<12);
   // update bit 5 of the timer to allow ADC to be triggered by timer
