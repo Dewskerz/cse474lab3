@@ -10,7 +10,7 @@
 
 */
 
-#define TEST_CODE 2
+#define TEST_CODE 3
 
 #include "header.h"
 #include "SSD2119.h"
@@ -68,6 +68,9 @@ void main(void) {
   case 2:
     LCDCube();
     break;
+  case 3:
+    FSM_TrafficLight();
+    break;
   } 
 }
 
@@ -101,6 +104,7 @@ void ADCThermometer(void) {
 // draw a 3D rotating cube that is started and stopped by button
 void LCDCube(void) {
   Enable_All_GPIO();              // just turn on all of the GPIO Ports all at once
+  
   PLL_Init(currclockspeed);      // sets cpu clock to 80MHz
   Timer_Init(currclockspeed / 4);
   LCD_Init();
@@ -109,7 +113,6 @@ void LCDCube(void) {
   __enable_interrupt();
   
   bool cuberotate = true;
-  float theta = 0.0;
   //x range (1492, 3019) or 1527
   //y range (1391, 2330) or 939
   while(1) {
@@ -122,10 +125,10 @@ void LCDCube(void) {
       
       unsigned long xraw = Touch_ReadX();
       unsigned long yraw = Touch_ReadY();
-      //calibrate(xraw, yraw);
-      //888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
       xp = 320 - (((xraw - 1492)*320) / 1527);
       yp = 240 - (((yraw - 1400) * 240) / 1200);
+      LCD_Printf("Pressed                   \n");
+      LCD_SetCursor(0, 0);
       LCD_Printf("Pressed(%d,%d)\n", xp, yp);
       if (currclockspeed < 10) {
          LCD_Goto(13,0);
@@ -135,9 +138,7 @@ void LCDCube(void) {
       if (xp < 160 && yp > 200) cuberotate = true;
       if (xp > 160 && yp > 200) cuberotate = false;
       if (cuberotate == true) {
-        UpdateSquare(theta, 35);
-        theta += (PI / 12.0);
-        if (theta > PI * 2.0) theta = 0;
+        UpdateCube(PI/12);
       }
       
       
@@ -146,7 +147,27 @@ void LCDCube(void) {
     }
   }
 }
-
+void FSM_TrafficLight(void) {
+  Enable_All_GPIO();              // just turn on all of the GPIO Ports all at once
+  
+  PLL_Init(currclockspeed);      // sets cpu clock to 80MHz
+  Timer_Init(currclockspeed);
+  LCD_Init();
+  Touch_Init();
+  PortC_LED_Init();
+  Interrupt_Init();
+  __enable_interrupt();
+  
+  while(1) {
+    //C_DATA |= C_RED;
+    C_DATA |= 0x70;
+    C_DATA &= ~(1<<4);
+    C_DATA |= 0x70;
+    C_DATA &= ~(1<<5);
+    C_DATA |= 0x70;
+    C_DATA &= ~(1<<6);
+  }
+}
 
 
 /*
@@ -185,6 +206,7 @@ int TakeTemperature(void) {
   float VREFP = 3.3;
   float VREFN = 0;
   int temp = (int) (147.5 - ((75 * (VREFP - VREFN) * ADC0_SSFIFO3_ADC)) / 4096.0);
+  printf("temp: %d\n",temp);
  
   // reset raw interrupt to 0
   ADC0_ISC_ADC |= (1<<3);
@@ -200,19 +222,19 @@ int TakeTemperature(void) {
 
 void SetLED_Temp(int temp) {
   if (temp >= 0 && temp < 17) {
-    F_DATA = RED;
+    F_DATA = F_RED;
   } else if (temp >= 17 && temp < 19) {
-    F_DATA = BLUE;
+    F_DATA = F_BLUE;
   } else if (temp >= 19 && temp < 21) {
-    F_DATA = VIOLET;
+    F_DATA = F_VIOLET;
   } else if (temp >= 21 && temp < 23) {
-    F_DATA = GREEN;
+    F_DATA = F_GREEN;
   } else if (temp >= 23 && temp < 25) {
-    F_DATA = YELLOW;
+    F_DATA = F_YELLOW;
   } else if (temp >= 25 && temp < 27) {
-    F_DATA = LIGHTBLUE;
+    F_DATA = F_LIGHTBLUE;
   } else if (temp >= 27 && temp < 40) {
-    F_DATA = WHITE;
+    F_DATA = F_WHITE;
   }
 }
 
@@ -234,52 +256,41 @@ void calibrate(unsigned long xraw, unsigned long yraw) {
 }
 
 //bool first = true;
-void UpdateSquare(float theta, unsigned short radius) {
-  static float x[] = {35.5,0.5,-35.5,0.5};
-  static float y[] = {0.5,35.5,0.5,-35.5};
-  static float n = 1.0;
+void UpdateCube(float theta) {
+  static float x[] = {0,-40,-16,24,-31,10,37,-5};
+  static float y[] = {36,26,12,22,-14,-4,-19,-30};
   
-  short offsetx = 150;
-  short offsety = 90;
+  DrawCube(x,y,0);
+ 
+  float costheta = cos(theta);
+  float sintheta = sin(theta);
   
-  DrawSquare(offsetx + x[0],offsetx + x[1],offsetx + x[2],offsetx + x[3],offsety + y[0],offsety + y[1],offsety + y[2],offsety + y[3],0);
-  
-  //theta += PI / 4.0;
-  /*
-  x[0] =  radius * cos(theta);
-  x[1] =  radius * cos(theta + (PI / 2));
-  x[2] =  radius * cos(theta + (PI));
-  x[3] =  radius * cos(theta + ((3.0 * PI) / 2.0));
-  
-  y[0] = radius * sin(theta);
-  y[1] =  radius * sin(theta + (PI / 2));
-  y[2] =  radius * sin(theta + (PI));
-  y[3] =  radius * sin(theta + ((3.0 * PI) / 2.0));
-  */
-  // update original
-  // factor in offset
-  
-  int fuckinggoddamnmotherfuckingbreakpointherefucker = 0xfff;
-  
-  for (int i = 0; i < 4; i++) {
-    float xtemp = x[i]*cos(theta) - y[i]*sin(theta);
-    x[i] = xtemp*1.3;
-    float ytemp = y[i]*cos(theta) + x[i]*sin(theta);
-    y[i] = ytemp*1.3;
+  for (int i = 0; i < 8; i++) {
+    float x1 = x[i]*costheta - y[i]*sintheta;
+    float y1 = y[i]*costheta + x[i]*sintheta;
+    x[i] = x1;
+    y[i] = y1;
   }
-  n++;
-  
-  
-  DrawSquare(offsetx + x[0],offsetx + x[1],offsetx + x[2],offsetx + x[3],offsety + y[0],offsety + y[1],offsety + y[2],offsety + y[3],15);
-  
-  //int fuckinggoddamnmotherfuckingbreakpointherefucker = 0xfff;
+
+  DrawCube(x,y,15);
 }
 
-void DrawSquare(unsigned short x1, unsigned short x2, unsigned short x3, unsigned short x4, 
-                unsigned short y1, unsigned short y2, unsigned short y3, unsigned short y4, 
-                unsigned short color) {
-  LCD_DrawLine(x1, y1, x2, y2, Color4_Andrew[color]);
-  LCD_DrawLine(x2,y2,x3,y3, Color4_Andrew[color]);
-  LCD_DrawLine(x3,y3,x4,y4, Color4_Andrew[color]);
-  LCD_DrawLine(x4,y4,x1,y1, Color4_Andrew[color]);
+void DrawCube(float x[], float y[], unsigned short color) {
+  short offsetx = 160;
+  short offsety = 120;
+  LCD_DrawLine(offsetx+x[0],offsety+y[0],offsetx+x[1],offsety+y[1], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[1],offsety+y[1],offsetx+x[2],offsety+y[2], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[2],offsety+y[2],offsetx+x[3],offsety+y[3], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[3],offsety+y[3],offsetx+x[0],offsety+y[0], Color4_Andrew[color]);
+  
+  LCD_DrawLine(offsetx+x[4],offsety+y[4],offsetx+x[5],offsety+y[5], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[5],offsety+y[5],offsetx+x[6],offsety+y[6], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[6],offsety+y[6],offsetx+x[7],offsety+y[7], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[7],offsety+y[7],offsetx+x[4],offsety+y[4], Color4_Andrew[color]);
+  
+  LCD_DrawLine(offsetx+x[1],offsety+y[1],offsetx+x[4],offsety+y[4], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[2],offsety+y[2],offsetx+x[7],offsety+y[7], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[3],offsety+y[3],offsetx+x[6],offsety+y[6], Color4_Andrew[color]);
+  LCD_DrawLine(offsetx+x[0],offsety+y[0],offsetx+x[5],offsety+y[5], Color4_Andrew[color]);
+  
 }

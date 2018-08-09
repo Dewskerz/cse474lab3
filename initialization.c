@@ -13,6 +13,8 @@
 
 void Enable_All_GPIO(void) {
  SYSCTL_RCGCGPIO |= 0x1F;
+ int n = 500;
+ while(n--){}
 }
 
 // initlize the onboard portF LED
@@ -38,6 +40,18 @@ void Switch_Init(void) {
   PORTA_DIRECTION &= ~0x60;            // set PA5, PA6 Direction to input
   PORTA_FUNCTION &= ~0x60;          // PA5 PA6 regular port function
   PORTA_DIGITAL |= 0x60;             // PA5 PA6 port set to digital
+}
+
+void PortC_LED_Init(void) {
+  volatile unsigned long delay = 0;
+  CONTROL_REGISTER |= 0x04;          // activate clock for Port C
+  while(delay < 100) {delay++;}
+  GPIO_PORTC_AMSEL_R &= ~(0x70); // 0000xxxx analog
+  GPIO_PORTC_DEN_R |= 0x70;      // 1111xxxx digital enable
+  GPIO_PORTC_DIR_R |= 0x70;      // 1111xxxx output
+  GPIO_PORTC_PCTL_R &= ~(0xFFFF0000); 
+  GPIO_PORTC_AFSEL_R &= ~(0x70);
+  GPIO_PORTC_DATA_R &= ~(0x70); // turn them off
 }
 
 // initialize the offboard LED in PA2, PA3, PA4

@@ -80,6 +80,19 @@
 #define PORTA_DATA       (*((volatile uint32_t *)0x400043FC))
 
 // ***************************
+// Definitions for Port C LED
+#define GPIO_PORTC_AMSEL_R      (*((volatile uint32_t *)0x40006528))
+#define GPIO_PORTC_DEN_R        (*((volatile uint32_t *)0x4000651C))
+#define GPIO_PORTC_DIR_R        (*((volatile uint32_t *)0x40006400))
+#define GPIO_PORTC_PCTL_R       (*((volatile uint32_t *)0x4000652C))
+#define GPIO_PORTC_AFSEL_R      (*((volatile uint32_t *)0x40006420))
+#define GPIO_PORTC_DATA_R       (*((volatile uint32_t *)0x400063FC))
+#define C_DATA       (*((volatile uint32_t *)0x400063FC))
+#define C_OFF  ~(0x70);
+#define C_RED 0x10;
+#define C_ALL_ON 0x70;
+
+// ***************************
 // Definitions for Port F LED
 // and onboard switches
 #define F_DATA_DIRECTION  (*((volatile uint32_t *)0x40025400))  //port F data direction
@@ -116,22 +129,21 @@
 #define INTERRUPT_PRIORITY       (*((volatile uint32_t *)0xE000E41C))
 
 //for port F onboard LED
-#define RED       0x02  // 0b00010
-#define BLUE      0x04  // 0b00100
-#define VIOLET    0x06  // 0b00110
-#define GREEN     0x08  // 0b01000
-#define YELLOW    0x0A  // 0b01010
-#define LIGHTBLUE 0x0D  // 0b01100
-#define WHITE     0x1E  //0b11110
+#define F_RED       0x02  // 0b00010
+#define F_BLUE      0x04  // 0b00100
+#define F_VIOLET    0x06  // 0b00110
+#define F_GREEN     0x08  // 0b01000
+#define F_YELLOW    0x0A  // 0b01010
+#define F_LIGHTBLUE 0x0D  // 0b01100
+#define F_WHITE     0x1E  //0b11110
 
 /// **************************************************************************
 /// ************* Function Declarations
 void ADCThermometer(void);
 void LCDCube(void);
-void UpdateSquare(float theta, unsigned short radius);
-void DrawSquare(unsigned short x1, unsigned short x2, unsigned short x3, unsigned short x4, 
-                unsigned short y1, unsigned short y2, unsigned short y3, unsigned short y4, 
-                unsigned short color);
+void UpdateCube(float theta);
+void DrawCube(float x[], float y[], unsigned short color);
+void FSM_TrafficLight(void);
 
 /******************/
 //Initializations
@@ -149,6 +161,7 @@ void Interrupt_Init(void);  // sets up functionality for
                             // and the timer interrupt
 void ADC_Andrew_Init(void); // funky name because there's an ADC_Init somewhere else
 void PLL_Init(int speed);
+void PortC_LED_Init(void);
 /************************/
 
 void welcomeFlash(); // cycles through PortF colors
