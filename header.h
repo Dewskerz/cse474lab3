@@ -78,6 +78,10 @@
 #define PORTA_FUNCTION      (*((volatile uint32_t *)0x40004420))
 #define PORTA_DIGITAL        (*((volatile uint32_t *)0x4000451C))
 #define PORTA_DATA       (*((volatile uint32_t *)0x400043FC))
+#define GPIO_PORTA_AMSEL_R      (*((volatile uint32_t *)0x40004528))
+#define GPIO_PORTA_AFSEL_R      (*((volatile uint32_t *)0x40004420)) 
+#define GPIO_PORTA_PCTL_R       (*((volatile uint32_t *)0x4000452C))
+#define GPIO_PORTA_DEN_R        (*((volatile uint32_t *)0x4000451C))
 
 // ***************************
 // Definitions for Port C LED
@@ -88,8 +92,10 @@
 #define GPIO_PORTC_AFSEL_R      (*((volatile uint32_t *)0x40006420))
 #define GPIO_PORTC_DATA_R       (*((volatile uint32_t *)0x400063FC))
 #define C_DATA       (*((volatile uint32_t *)0x400063FC))
-#define C_OFF  ~(0x70);
-#define C_RED 0x10;
+#define C_OFF  ~(0xF0);
+#define C_RED  0x20;
+#define C_YELLOW 0x40;
+#define C_GREEN  0x80;
 #define C_ALL_ON 0x70;
 
 // ***************************
@@ -116,6 +122,28 @@
 #define Timer0_FLAG      (*((volatile uint32_t *)0x40030024))  // TIMER0_ICR_R
 #define Timer0_INTERRUPT (*((volatile uint32_t *)0x40030018))  // TIMER0_IMR_R
 #define Timer0_TIMEOUT   (*((volatile uint32_t *)0x4003001C))
+
+//****************************************************
+// Definitions for UART
+#define SYSCTL_RCGCUART_R       (*((volatile uint32_t *)0x400FE618))  // runmode clock gating control
+#define UART0_CTL_R             (*((volatile uint32_t *)0x4000C030))  // control
+#define UART0_IBRD_R            (*((volatile uint32_t *)0x4000C024))  // int baud rate divisor
+#define UART0_FBRD_R            (*((volatile uint32_t *)0x4000C028))  // fractional baud rate divider
+#define UART0_CC_R              (*((volatile uint32_t *)0x4000CFC8))  // line control
+#define UART0_LCRH_R            (*((volatile uint32_t *)0x4000C02C))  // clock configuration
+#define UART0_FR_R              (*((volatile uint32_t *)0x4000C018))  // flag
+#define UART0_DR_R              (*((volatile uint32_t *)0x4000C000))  // data
+
+/*
+80 MHZ
+  without LCD
+    BDR_80 = 80,000,000 / (16 * 9600) = 520
+    DIVFRAC_80 = integer(833333333333 * 64 + 0.5) = 53
+*/
+#define BRD_80              520
+#define DIVFRAC_80          53
+#define BRD_4               26
+#define DIVFRAC_4           3
 
 // *****************************************
 // Definitions for interrupt
@@ -144,6 +172,7 @@ void LCDCube(void);
 void UpdateCube(float theta);
 void DrawCube(float x[], float y[], unsigned short color);
 void FSM_TrafficLight(void);
+void PortC_LED_Setter(int code);
 
 /******************/
 //Initializations
@@ -162,6 +191,10 @@ void Interrupt_Init(void);  // sets up functionality for
 void ADC_Andrew_Init(void); // funky name because there's an ADC_Init somewhere else
 void PLL_Init(int speed);
 void PortC_LED_Init(void);
+void UART0_INIT(int ibrd, int fbrd);
+char UART0_ReadChar();
+void UART0_WriteChar(char c);
+void UART0_WriteString(char* s);
 /************************/
 
 void welcomeFlash(); // cycles through PortF colors

@@ -147,3 +147,35 @@ void ADC_Andrew_Init(void) {
   // start a new conversion
   ADC0_PSSI_ADC |= (1<<3);
 }
+
+void UART0_INIT(int ibrd, int fbrd) {
+  SYSCTL_RCGCUART_R |= 0x1;  // enable UART 0
+  SYSCTL_RCGCGPIO |= (1<<0);
+  GPIO_PORTA_AFSEL_R |= (1<<1)|(1<<0);
+  GPIO_PORTA_PCTL_R |= (1<<0)|(1<<4);
+  GPIO_PORTA_DEN_R |= (1<<0)|(1<<1);
+  
+  // setup UART0
+  UART0_CTL_R &= ~(1<<0);     // disable while configuring
+  UART0_IBRD_R = ibrd; // set the integer part of the BRD
+  UART0_FBRD_R = fbrd;  // set the fractional part of the BRD
+  
+  UART0_LCRH_R |= (0x3<<5);            // write 0x06
+  UART0_CC_R = 0x0;                     // sets source clock to 16MHZ
+  UART0_CTL_R = (1<<0)|(1<<8)|(1<<9);  // enable the uart
+  
+}
+char UART0_ReadChar() {
+  while ((UART0_FR_R & (1<<4)) != 0);     // flag check the receive is complete
+  return UART0_DR_R;                      // read that data
+}
+void UART0_WriteChar(char c) {
+  while ((UART0_FR_R & (1<<5)) != 0);     // flag check the transmitter is complete
+  UART0_DR_R = c;                          // write that char to the data 
+}
+void UART0_WriteString(char* s) {
+  while (*s) {     // while not null terminator
+    UART0_WriteChar(*(s++));     // write/print that char to the data
+  }
+}
+
