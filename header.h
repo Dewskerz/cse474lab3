@@ -172,6 +172,7 @@ void LCDCube(void);
 void UpdateCube(float theta);
 void DrawCube(float x[], float y[], unsigned short color);
 void FSM_TrafficLight(void);
+void DMAPortFLED(void);
 void PortC_LED_Setter(int code);
 
 /******************/

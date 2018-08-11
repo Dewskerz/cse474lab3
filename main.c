@@ -41,10 +41,13 @@ unsigned short Color4_Andrew[16] = {
 
 /*****   Test Code Guide ***********************************************
   1: ADCTermometer(void)
-      LAB3 part A
-  2: LCDCube(void)
+      LAB3 part A and B
+  2: DMA_PORTF_LED()
+      DMA, makes port f led blink
+  3: LCDCube(void)
       LAB3 Part D
       Draws a 3d rotating cube
+  4: FSM_TrafficLight
 */
 
 bool timerbool = false;
@@ -63,6 +66,9 @@ void main(void) {
     LCDCube();
     break;
   case 3:
+    DMAPortFLED();
+    break;
+  case 4:
     FSM_TrafficLight();
     break;
   } 
@@ -118,6 +124,19 @@ void ADCThermometer(void) {
       timerbool = !timerbool;
     }
   }
+}
+
+void DMAPortFLED(void) {
+  // Part B goes here
+  // TODO:  All of the initializations
+  // look at ADCTermometer for inspiration
+  // the chances are it's going to have a lot of the same functionality for
+  // initializing port f, and led
+  // i dont know what else goes into it
+  // if DMA needs an initialization, put it either on line 177 or 199 of header.h
+  // and initialize it inside of initializations.c
+  // again, don't worry about breaking anything, GitHub is designed such that you literally cannot
+  // irreversibly break everything
 }
 
 // draw a 3D rotating cube that is started and stopped by button
