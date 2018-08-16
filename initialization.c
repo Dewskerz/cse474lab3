@@ -68,7 +68,8 @@ void LED_Init(void) {
   PORTA_DIGITAL |= 0x1C;        // PA2 enable digital port
 }
 
-// initialize timer0
+// initialize timer0 to trigger after clockspeedmhz time as passed
+// designed to be used in conjunction with that clockspeed
 void Timer_Init(int clockspeedmhz) {
   RCGCTIMER |= 0x01; // enable the timer
   Timer0_CTL &= ~0x01; // lock the timer
@@ -94,6 +95,7 @@ void Interrupt_Init(void) {
   PORTF_MASK |= 0x11;  // unmask interrupts
 }
 
+// sets the CPU clock at speed MHz
 void PLL_Init(int speed) {
   // step 1, enable the 31 bit
   RCC2 |= (0x80000000);
@@ -123,6 +125,7 @@ void PLL_Init(int speed) {
   RCC2 &= ~(1<<11);
 }
 
+// set up the thermometer
 void ADC_Andrew_Init(void) {
   
   // enable clock on RCGCADC
@@ -148,6 +151,8 @@ void ADC_Andrew_Init(void) {
   ADC0_PSSI_ADC |= (1<<3);
 }
 
+
+// set up uart 0
 void UART0_INIT(int ibrd, int fbrd) {
   SYSCTL_RCGCUART_R |= 0x1;  // enable UART 0
   SYSCTL_RCGCGPIO |= (1<<0);

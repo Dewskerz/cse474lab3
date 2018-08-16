@@ -1,7 +1,7 @@
 /*
   Copyright 2018 
-  Andrew Cunningham,  andyham@uw.edu, 1610973
-  Abhyudaya Gupta
+  Andrew Cunningham, andyham@uw.edu, 1610973
+  Abhyudaya Gupta, ag98@uw.edu , 1664461        
 
   CSE 474 SU 2018
   Lab 3
@@ -10,7 +10,7 @@
 
 */
 
-#define TEST_CODE 1
+#define TEST_CODE 4
 
 #include "header.h"
 #include "SSD2119.h"
@@ -42,31 +42,45 @@ unsigned short Color4_Andrew[16] = {
 /*****   Test Code Guide ***********************************************
   1: ADCTermometer(void)
       LAB3 part A and B
+      pools the thermometer every second and
+      adjusts the Port F LED
+      prints to IAR I/O console
+      prints to UART 0
+      onboard buttons configured to change the PLL and Timer when pressed
+      see functionality in GPIOPortF_Handler()
+      The user, over UART, is constantly prompted to change the clockspeed
+      the input is then used to switch the clockspeed between 4MHz and 80MHz
+      or do nothing
   2: DMA_PORTF_LED()
       DMA, makes port f led blink
+      finished the functionality from the code supplied by course instructors
   3: LCDCube(void)
       LAB3 Part D
       Draws a 3d rotating cube
+      that can be started or stopped via virtual buttons on the LCD
   4: FSM_TrafficLight
+      implements lab 2 FSM using virtual passenger or start/stop buttons
+      and the lights are on GPIO port c
 */
 
-bool timerbool = false;
-int counter = 0;
-int currclockspeed = 80;
-long xp;
-long yp;
+bool timerbool = false;  // all the timer hander does is toggle this
+int counter = 0;         // and increment this
+int currclockspeed = 80;  // the current clockspeed, starts at 80MHz
+long xp;                 // coordinates currently touched by the LCD
+long yp;                // coordinates currently touched by the LCD
 
 
 void main(void) {
+  // please see above for functionality
   switch (TEST_CODE) {
   case 1:
     ADCThermometer();
     break;
   case 2:
-    LCDCube();
+    DMAPortFLED();
     break;
   case 3:
-    DMAPortFLED();
+    LCDCube();
     break;
   case 4:
     FSM_TrafficLight();
@@ -78,9 +92,9 @@ void ADCThermometer(void) {
   Enable_All_GPIO();              // just turn on all of the GPIO Ports all at once
   Timer_Init(currclockspeed);
   PLL_Init(currclockspeed);      // sets cpu clock to 80MHz
-  ADC_Andrew_Init();
+  ADC_Andrew_Init();            // enable thermoneter
   UART0_INIT(BRD_80, DIVFRAC_80);
-  PortF_LED_Init();
+  PortF_LED_Init();   // enable the Port F LED
   PortC_LED_Init();  // this doesn't NEED to be here.. it just turns off the LEDs if they are plugged in
   Interrupt_Init();
   __enable_interrupt();
@@ -93,18 +107,23 @@ void ADCThermometer(void) {
       printf("temp%d: %d\n",counter,temp);
       SetLED_Temp(temp);
       // see if there's anything from the UART
+      // this is done every second
+      // it's poor design, but accomplishes the purpose of the lab
       UART0_WriteString("Enter: \"f\" or \"s\" to change speed, \"ENTER\" otherwise:\n\r");
       char c = UART0_ReadChar();
       UART0_WriteChar(c);
       UART0_WriteString("\n\r");
-      switch (c) {
+      // check to see if we got anything from UART!
+      switch (c) :
       case 'f':
+        // set the clockspeed to 80MHZ
         currclockspeed = 80;
         Timer_Init(currclockspeed);
         PLL_Init(currclockspeed);
         UART0_INIT(BRD_80, DIVFRAC_80);
         break;
       case 's':
+        // set the clockspeed to 4MHZ
         currclockspeed = 4;
         Timer_Init(currclockspeed);
         PLL_Init(currclockspeed);
@@ -113,6 +132,7 @@ void ADCThermometer(void) {
       case '\n':
         break;
       default:
+        // they typed something..
         UART0_WriteString("No or invalid input\n\r");
       }
       
@@ -127,16 +147,8 @@ void ADCThermometer(void) {
 }
 
 void DMAPortFLED(void) {
-  // Part B goes here
-  // TODO:  All of the initializations
-  // look at ADCTermometer for inspiration
-  // the chances are it's going to have a lot of the same functionality for
-  // initializing port f, and led
-  // i dont know what else goes into it
-  // if DMA needs an initialization, put it either on line 177 or 199 of header.h
-  // and initialize it inside of initializations.c
-  // again, don't worry about breaking anything, GitHub is designed such that you literally cannot
-  // irreversibly break everything
+  // call the supplied DMA functionality
+  DMAtestmain();
 }
 
 // draw a 3D rotating cube that is started and stopped by button
@@ -154,10 +166,13 @@ void LCDCube(void) {
   //x range (1492, 3019) or 1527
   //y range (1391, 2330) or 939
   while(1) {
+    // only enter once every second
     if (timerbool) {
       LCD_SetCursor(302, 0);
-      LCD_Printf("%d", counter);
+      LCD_Printf("%d", counter);  // display a handy counter
       LCD_SetCursor(0, 0);
+      
+      // draw start and stop
       LCD_DrawFilledRect(20,120,60,80,Color4_Andrew[2]);
       LCD_DrawFilledRect(240,120,60,80,Color4_Andrew[4]); 
       
@@ -184,12 +199,17 @@ void LCDCube(void) {
       LCD_SetCursor(0, 0);
       LCD_Printf("Pressed(%d,%d)\n", xraw, yraw);
       
+      // the coordinates seem  to drift whenever the LCD is unplugged
+      // and plugged in.  These should be mostly right though
       if (xraw > 1690 && xraw < 2000 && yraw > 1820 && yraw < 2000) {cuberotate = false;}
       if (xraw > 2080 && xraw < 2390 && yraw > 2080 && yraw < 2280) {cuberotate = true;}
       if (cuberotate == true) {
+        // only rotate the cube if it's turned on
+        // and rotate it by pi/24 radians
         UpdateCube(PI/24);
       }
       
+      // switch timerbool back so that this only triggers once a second
       timerbool = !timerbool;
     }
   }
@@ -205,38 +225,47 @@ void FSM_TrafficLight(void) {
   Interrupt_Init();
   __enable_interrupt();
   
+  // turn off Port F LED, we dont need them
   F_DATA = 0;
   
-  int countto = 4;
   
-  bool isred = true;
-  bool ison = true;
-  bool isyellow = false;
-  bool onoffpressed = false;
-  bool passpressed = false;
-  int switchcounter = 0;
-  int lightcounter = 0;
+  int countto = 4; // count to this before changing colors. change this to adjust the frequency
+  
+  bool isred = true;         // used to switch back and forth between red and green
+  bool ison = true;          // the light will turn off if false
+  bool isyellow = false;     // used to tell if the light is yellow
+  bool onoffpressed = false;  // is the user pressing the on off button?
+  bool passpressed = false;   // is the user pressing the passenger button?
+  int switchcounter = 0;      // used to track how long the light has been presed
+  int lightcounter = 0;      // used to track how long the light has been its color
   
   while(1) {
     if (timerbool) {
       LCD_SetCursor(302, 0);
       LCD_Printf("%d", counter);
       
+      // draw passenger button
       LCD_DrawFilledRect(20,120,60,80,Color4_Andrew[14]);
       if (!ison) {
+        // make start/stop button green
         LCD_DrawFilledRect(240,120,60,80,Color4_Andrew[10]); 
       } else {
+        // make start/stop button red
         LCD_DrawFilledRect(240,120,60,80,Color4_Andrew[12]); 
       }
       
+      // get the coordinates
       long xraw = Touch_ReadX();
       long yraw = Touch_ReadY();
+      
+      // determine if a button has been pressed
       if (xraw > 1620 && xraw < 20200 && yraw > 1600 && yraw < 1980) {
         onoffpressed = true;
         
       } else if (xraw > 2090 && xraw < 2420 && yraw > 1980 && yraw < 2280) {
         passpressed = true;
       } else {
+        // none are pressed, make sure that the bools reflect that
         onoffpressed = false;
         passpressed = false;
       }
@@ -244,8 +273,6 @@ void FSM_TrafficLight(void) {
       LCD_Printf("Pressed                   \n");
       LCD_SetCursor(0, 0);
       LCD_Printf("Pressed(%d,%d)\n", xraw, yraw);
-      
-      
       
       if (onoffpressed) { // on/off switch depressed
         if (switchcounter == 1) {
@@ -270,37 +297,36 @@ void FSM_TrafficLight(void) {
       } // end switch checks
       
       if (ison) { // only change lights of FSM is on
-        if (isyellow) { // gotta blink yellow
-          PortC_LED_Setter(2);
-          if (lightcounter == countto) {
+        if (isyellow) { // light is currently yellow
+          PortC_LED_Setter(2);  // make sure that yellow is on
+          if (lightcounter == countto) {  // time to switch away from yellow
             isyellow = false;
             lightcounter = 0;
           } else {
-            lightcounter ++;
+            lightcounter ++;  // not quite there yet, stay yellow
           }
         } else { // end handle yellow
           if (isred) { // light is red
-            PortC_LED_Setter(1);
+            PortC_LED_Setter(1);  // make sure that red is on
             if (lightcounter == countto) { // switch to green
               isred = false;
               lightcounter = 0;
             } else {
-              lightcounter ++;
+              lightcounter ++;  // stay red
             }
           } else { // light is green
-            PortC_LED_Setter(3);
+            PortC_LED_Setter(3);  // make sure light is green
             if (lightcounter == countto) { // switch to red
               isred = true;
               lightcounter = 0;
             } else {
-              lightcounter ++;
+              lightcounter ++;  // remain green
             }
           }
         } // end switch between red and green
-      } else { // this else never happens since the if is always trie
-               // it's a depreciated relic of part 1
-          C_DATA &= C_OFF;
-          isred = true;
+      } else {
+          PortC_LED_Setter(0xBADA55);  // we want to make sure the setter turns off
+          isred = true;  // make sure is red when we start
           isyellow = false;
           lightcounter = 0;
       }// end ison light operation
@@ -311,15 +337,15 @@ void FSM_TrafficLight(void) {
 }
 
 void PortC_LED_Setter(int code) {
-  C_DATA &= C_OFF;
+  C_DATA &= ~(0xe0);  // start by turning everything off
   switch (code) {
-  case 1:
+  case 1:  // red
     C_DATA |= C_RED;
     break;
-  case 2:
+  case 2:  // yellow
     C_DATA |= C_YELLOW;
     break;
-  case 3:
+  case 3:  // green
     C_DATA |= C_GREEN;
     break;
   }

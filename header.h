@@ -92,11 +92,10 @@
 #define GPIO_PORTC_AFSEL_R      (*((volatile uint32_t *)0x40006420))
 #define GPIO_PORTC_DATA_R       (*((volatile uint32_t *)0x400063FC))
 #define C_DATA       (*((volatile uint32_t *)0x400063FC))
-#define C_OFF  ~(0xF0);
+#define C_OFF  0xe0;
 #define C_RED  0x20;
 #define C_YELLOW 0x40;
 #define C_GREEN  0x80;
-#define C_ALL_ON 0x70;
 
 // ***************************
 // Definitions for Port F LED
@@ -172,8 +171,8 @@ void LCDCube(void);
 void UpdateCube(float theta);
 void DrawCube(float x[], float y[], unsigned short color);
 void FSM_TrafficLight(void);
-void DMAPortFLED(void);
 void PortC_LED_Setter(int code);
+void UART0_INIT(int ibrd, int fbrd);
 
 /******************/
 //Initializations
@@ -190,12 +189,14 @@ void Interrupt_Init(void);  // sets up functionality for
                             // the two onboard buttons to act as interrupts
                             // and the timer interrupt
 void ADC_Andrew_Init(void); // funky name because there's an ADC_Init somewhere else
-void PLL_Init(int speed);
-void PortC_LED_Init(void);
-void UART0_INIT(int ibrd, int fbrd);
-char UART0_ReadChar();
-void UART0_WriteChar(char c);
-void UART0_WriteString(char* s);
+void PLL_Init(int speed);   // set the CPU clock to speed MHz
+void PortC_LED_Init(void);  // initialize ports PA5, 6, and 7 to work with offboard LEDS
+void UART0_INIT(int ibrd, int fbrd); // configure the UART to work at a baud rate determined by the parameters
+char UART0_ReadChar();  // read a single character from the UART
+void UART0_WriteChar(char c);  // write a single character
+void UART0_WriteString(char* s); // write a string
+int DMAtestmain(void);  // calls the functionality supplied by the lab handouts.  It was all consolidated here
+void DMAPortFLED(void); // wrapper for DMA test
 /************************/
 
 void welcomeFlash(); // cycles through PortF colors
